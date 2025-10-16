@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en">
+	<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,100..900;1,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/white.css">
+
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="plugin/highlight/monokai.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+          <h2>От мечты к провалу</h2>
+          <p>как загубить фронтенд-проект</p>
+        </section>
+        <section>
+          <blockquote cite="" style="font-style: normal; font-weight: 500; font-size: 0.7em">
+            Бабочка взмахивает крыльями в Китае и колеблет воздух, и, в конце концов, <br/>на Нью-Йорк обрушивается шторм
+          </blockquote>
+        </section>
+        <section>
+          <h2>Эффект бабочки</h2>
+          <p class="fragment">Небольшие решения<br/>&mdash; большие последствия</p>
+          <aside class="notes">
+            <ul>
+              <li>1952 Рэй Брэдбери =&gt; И грянул гром</li>
+              <li>1972 Предсказуемость: может ли взмах крыла бабочки в Бразилии вызвать торнадо в Техасе?</li>
+              <li>Теория Хаоса</li>
+              <li>2004 Фильм эффект бабочки</li>
+            </ul>
+          </aside>
+        </section>
+        <section>
+          <h3>План на сегодня</h3>
+          <ol style="font-weight: 300">
+            <li>DRY
+              <ul>
+                <li>Код</li>
+                <li>Части проекта</li>
+                <li>Конфиги</li>
+              </ul>
+            </li>
+            <li>Имена и типы</li>
+            <li>Большие изменения</li>
+            <li>Перформанс</li>
+          </ol>
+        </section>
+        <section>
+          <h1>DRY</h1>
+          <p>Don’t repeat yourself</p>
+        </section>
+        <section data-transition="slide none">
+          <img src="img/tetris.svg" alt="">
+        </section>
+        <section data-transition="none slide">
+          <img  src="img/tetris2.svg" alt="">
+        </section>
+        <section>
+          <p>А всегда ли это работает?</p>
+        </section>
+        <section>
+          <pre style="font-size: 0.44em"><code data-trim data-line-numbers="1-17|1|4-5|6-11|12-14">
+function ProductCard({ product }) {
+  return (
+    &lt;div className=&quot;product-card&quot;&gt;
+      &lt;img src={product.image} alt={product.name} /&gt;
+      &lt;h3&gt;{product.name}&lt;/h3&gt;
+      &lt;div className=&quot;price&quot;&gt;
+        &lt;span className=&quot;current-price&quot;&gt;${product.price}&lt;/span&gt;
+        {product.oldPrice &amp;&amp; (
+          &lt;span className=&quot;old-price&quot;&gt;${product.oldPrice}&lt;/span&gt;
+        )}
+      &lt;/div&gt;
+      &lt;button onClick={() =&gt; addToCart(product.id)}&gt;
+        В корзину
+      &lt;/button&gt;
+    &lt;/div&gt;
+  );
+}
+          </code></pre>
+        </section>
+        <section>
+          <table>
+            <tr>
+              <td>20 строк кода</td>
+            </tr>
+            <tr>
+              <td>1 параметр (product)</td>
+            </tr>
+            <tr>
+              <td>30 секунд на понимание логики</td>
+            </tr>
+            <tr>
+              <td>3-5 тестовых случаев для полного покрытия</td>
+            </tr>
+          </table>
+        </section>
+        <section>
+          <pre style="font-size: 0.44em" ><code data-trim  data-line-numbers="1-33|1|2-14|16-23|25-31">
+function ProductCard({ product, layout = &#39;default&#39; }) {
+  const renderPrice = () =&gt; {
+    if (layout === &#39;compact&#39;) {
+      return &lt;span className=&quot;price-compact&quot;&gt;${product.price}&lt;/span&gt;;
+    }
+    return (
+      &lt;div className=&quot;price&quot;&gt;
+        &lt;span className=&quot;current-price&quot;&gt;${product.price}&lt;/span&gt;
+        {product.oldPrice &amp;&amp; (
+          &lt;span className=&quot;old-price&quot;&gt;${product.oldPrice}&lt;/span&gt;
+        )}
+      &lt;/div&gt;
+    );
+  };
+
+  const renderButton = () =&gt; {
+    const buttonText = layout === &#39;minimal&#39; ? &#39;Купить&#39; : &#39;В корзину&#39;;
+    return (
+      &lt;button onClick={() =&gt; addToCart(product.id)}&gt;
+        {buttonText}
+      &lt;/button&gt;
+    );
+  };
+
+  return (
+    &lt;div className={`product-card product-card--${layout}`}&gt;
+      &lt;img src={product.image} alt={product.name} /&gt;
+      &lt;h3&gt;{product.name}&lt;/h3&gt;
+      {renderPrice()}
+      {renderButton()}
+    &lt;/div&gt;
+  );
+}
+          </code></pre>
+        </section>
+        <section>
+          <table>
+            <tr>
+              <td>50 строк кода (увеличение в 2.5 раза)</td>
+            </tr>
+            <tr>
+              <td>4 параметра</td>
+            </tr>
+            <tr>
+              <td>3 минуты на понимание</td>
+            </tr>
+            <tr>
+              <td>10 тестовых случаев</td>
+            </tr>
+          </table>
+        </section>
+        <section>
+          <pre style="font-size: .44em"><code data-trim data-line-numbers="1-30|1-9|10-18|20-27|29">
+function ProductCard({ 
+  product, 
+  layout = &#39;default&#39;,
+  theme = &#39;light&#39;,
+  showRating = true,
+  showBadge = true,
+  buttonAction = &#39;cart&#39;,
+  priceFormat = &#39;standard&#39;
+}) {
+  const getLayoutConfig = () =&gt; {
+    const configs = {
+      default: { imageSize: &#39;large&#39;, titleSize: &#39;h3&#39;, spacing: &#39;normal&#39; },
+      compact: { imageSize: &#39;medium&#39;, titleSize: &#39;h4&#39;, spacing: &#39;small&#39; },
+      minimal: { imageSize: &#39;small&#39;, titleSize: &#39;h5&#39;, spacing: &#39;tiny&#39; },
+      featured: { imageSize: &#39;xlarge&#39;, titleSize: &#39;h2&#39;, spacing: &#39;large&#39; }
+    };
+    return configs[layout] || configs.default;
+  };
+
+  const renderPrice = () =&gt; {
+    const formatters = {
+      standard: () =&gt; renderStandardPrice(),
+      compact: () =&gt; renderCompactPrice(),
+      currency: () =&gt; renderCurrencyPrice()
+    };
+    return formatters[priceFormat]?.() || formatters.standard();
+  };
+
+  // ... остальная логика
+}
+          </code></pre>
+        </section>
+        <section>
+          <table>
+            <tr>
+              <td>150 строк кода</td>
+            </tr>
+            <tr>
+              <td>8 параметров конфигурации</td>
+            </tr>
+            <tr>
+              <td>15 минут на понимание логики</td>
+            </tr>
+            <tr>
+              <td>30+ тестовых случаев</td>
+            </tr>
+          </table>
+        </section>
+        <section>
+          <p>Вы еще помните чего мы там <b>DRY</b>им?</p>
+        </section>
+        <section>
+          <h2>Может повторение не так и страшно?</h2>
+          <pre style="font-size: 0.5em"><code data-trim>
+&lt;CompactProductCard product={product} /&gt;
+&lt;FeaturedProductCard product={product} /&gt;
+&lt;MinimalProductCard product={product} /&gt;
+          </code></pre>
+        </section>
+        <section>
+          <h2>Композиция</h2>
+          <pre style="font-size: 0.5em"><code data-trim>
+&lt;Card&gt;
+  &lt;CardImage src={product.image} /&gt;
+  &lt;CardTitle&gt;{product.name}&lt;/CardTitle&gt;
+  &lt;CardPrice price={product.price} oldPrice={product.oldPrice} /&gt;
+  &lt;CardButton onClick={() =&gt; addToCart(product.id)}&gt;
+            В корзину
+  &lt;/CardButton&gt;
+&lt;/Card&gt;
+          </code></pre>
+        </section>
+        <section>
+          <h2>А что выбрать?</h2>
+        </section>
+        <section>
+          <b>WET</b> (Write Everything Twice) принцип
+          <p style="font-size: 0.7em">дублировать код до понимания реальных паттернов</p>
+        </section>
+        <section>
+          <b>AHA</b> (Avoid Hasty Abstractions) принцип
+          <p style="font-size: 0.7em">золотая середина между DRY и WET</p>
+        </section>
+        <section>
+          <ul style="font-size: 0.7em">
+            <li>Дождитесь появления абстракции в трех или более местах</li>
+            <li>Убедитесь, что паттерн действительно устойчив</li>
+            <li>Создавайте абстракции на основе реального опыта, а не предположений</li>
+            <li>Оптимизируйте код для изменений, а не для элегантности</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Синьорный подход</h2>
+          <p class="fragment">Если будет меняться &mdash; сделай гибче</p>
+          <p class="fragment">Не будет меняться &mdash; копируй</p>
+        </section>
+        <section>
+          <h2>Нужно погрузиться в бизнес</h2>
+        </section>
+        <section>
+          Еще раз про DRY
+        </section>
+        <section>
+          <h2>Файлы</h2>
+          <img src="img/mo.png" alt="">
+        </section>
+        <section>
+          <h2>Редакторы</h2>
+          <img src="img/mo2.png" alt="">
+        </section>
+        <section data-transition="slide none">
+          <img src="./img/f_e.svg" alt="">
+        </section>
+        <section data-transition="none slide">
+          <img src="./img/f_e2.svg" alt="">
+        </section>
+        <section>
+          <img src="./img/common.svg" alt="">
+        </section>
+        <section>
+          <p>Ломающие изменения</p>
+          <img src="img/chat.svg" style="max-height: 60vh" alt="">
+        </section>
+        <section>
+          <p>Баги</p>
+          <img src="img/chat3.svg" style="max-height: 60vh" alt="">
+        </section>
+        <section>
+          <img src="./img/common.png" alt="">
+        </section>
+        <section>
+          <h2>А что есть common!?</h2>
+          <ul>
+            <li>Авторизация</li>
+            <li>Обшие компоненты</li>
+            <li>Веб клиент</li>
+            <li>Какие-то виджеты</li>
+          </ul>
+        </section>
+        <section>
+          <img src="./img/npm.svg" alt="">
+        </section>
+        <section>
+          <h2>Синьорный подход</h2>
+          <ul>
+            <li class="fragment">Семантика важна</li>
+            <li class="fragment">Важно быть простым и понятным</li>
+            <li class="fragment">Последствия решений</li>
+          </ul>
+        </section>
+        <section>
+          <h2>DRY в конфигурации</h2>
+          <p>или конфигурация ради конфигурации</p>
+        </section>
+<section>
+          <h2>Webpack</h2>
+          <pre><code class="javascript" data-trim>
+const path = require(&#39;path&#39;);
+
+module.exports = {
+  entry: &#39;./src/index.js&#39;,
+  output: {
+    path: path.resolve(__dirname, &#39;dist&#39;),
+    filename: &#39;bundle.js&#39;,
+    clean: true,
+  },
+  mode: &#39;development&#39;,
+  module: {
+    rules: [
+      {
+        test: /\.(js|jsx)$/,
+        exclude: /node_modules/,
+        use: {
+          loader: &#39;babel-loader&#39;,
+          options: {
+            presets: [&#39;@babel/preset-env&#39;, &#39;@babel/preset-react&#39;],
+          },
+        },
+      },
+      {
+        test: /\.css$/,
+        use: [&#39;style-loader&#39;, &#39;css-loader&#39;],
+      },
+    ],
+  },
+  resolve: {
+    extensions: [&#39;.js&#39;, &#39;.jsx&#39;],
+  },
+  devServer: {
+    static: path.join(__dirname, &#39;dist&#39;),
+    compress: true,
+    port: 3000,
+  },
+};
+</code></pre>
+        </section>
+<section>
+          У нас много команд, давайте переиспользуем этот замечательный config
+        </section>
+        <section>
+          <h2>Все просто</h2>
+          <pre><code data-trim class="javascript">
+module.exports = require(&#39;@my-company/configs/webpack.config&#39;);
+          </code></pre>
+        </section>
+        <section>
+          <h2>&mdash; Мне нужно добавить плагин!</h2>
+        </section>
+        <section data-transition="slide none">
+          <h2>Все просто</h2>
+          <pre><code data-trim class="javascript">
+            const commonConfig = require(&#39;@my-company/configs/webpack.config&#39;);
+
+            // свой плагин
+            module.exports = {
+            ...commonConfig, 
+            plugins : [mySuperPlugin]
+            }
+          </code></pre>
+        </section>
+<section data-transition="none slide">
+          <h2>Все просто</h2>
+          <pre><code data-trim class="javascript" data-line-numbers>
+const commonConfig = require(&#39;@my-company/configs/webpack.config&#39;);
+
+module.exports = {
+  ...commonConfig, 
+  plugins : [
+    ...commonConfig.plugins, 
+    mySuperPlugin
+  ]
+}
+          </code></pre>
+        </section>
+        <section>
+          Добро пожаловать в ад!
+          <ul>
+            <li class="fragment">Некоторые плагины нужно перенастраивать</li>
+            <li class="fragment">У всех разные правила</li>
+            <li class="fragment">У всех разные сервера разработки</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Что происходит дальше</h2>
+          <ul>
+            <li>Нам нужен frontops!</li>
+            <li>Пишем фреймворк на настройке конфигов</li>
+            <li>Не меняй корневой пакет, не понятно где все упадет</li>
+          </ul>
+        </section>
+        <section>Помните react-scripts?</section>
+        <section>
+          <h2>Craco</h2>
+          <blockquote>
+            allows you to get all of the benefits of Create React App without
+            ejecting
+          </blockquote>
+          <pre class="fragment">
+CREATE
+REACT
+APP
+CONFIGURATION
+OVERRIDE
+</pre
+          >
+        </section>
+        <section style="text-align: left">
+          <p>&mdash; Зачем мы это делали?</p>
+          <p>&mdash; Хотели единый конфиг!</p>
+        </section>
+        <section style="text-align: left">
+          <p>&mdash; Зачем нам единый конфиг?</p>
+          <p>
+            &mdash; Чтобы не настраивать webpack каждый раз, чтобы менять все
+            настройки в одном месте
+          </p>
+        </section>
+        <section style="text-align: left">
+          <p>
+            &mdash; Сколько стоит настроить вебпак для каждого проекта и менять
+            каждый конфиг отдельно?
+          </p>
+          <p>&mdash; Да фиг его знает!</p>
+        </section>
+        <section>
+          <p>
+            Лучше иметь одну стратегию
+          </p>
+          <ul>
+            <li class="fragment">Переиспользовать и запрещать менять</li>
+            <li class="fragment">Не переиспользовать</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Синьорный подход</h2>
+          <p>Важно придерживаться одной стратегии</p>
+        </section>
+<section>
+          <h2 class="r-fit-text">Имена и типы</h2>
+        </section>
+        <section>
+          <img src="img/login.png" alt="" />
+        </section>
+        <section>
+          <pre><code>
+type LoginData = {
+   "login": "string",
+   "password": "string"
+}
+          </code></pre>
+        </section>
+        <section>
+          <h2>JSON</h2>
+          <pre><code data-trim>
+{
+  "username": "aleksei.zolotykh",
+  "password": "123456"
+}
+          </code></pre>
+        </section>
+        <section>
+          <pre><code data-trim>
+const login = ({login, password}) =&gt; {
+  return fetch(&#39;/login&#39;, {
+    body: JSON.stringify({username: login , password}
+  })
+}
+          </code></pre>
+        </section>
+        <section>login =&gt; username</section>
+        <section>
+          <pre><code class="js" data-trim>
+const users = [
+  {login: "admin", ...}, 
+  {login: "superadmin", ...}, 
+  {login: "zolotyh", ...}
+]
+          </code></pre>
+        </section>
+        <section>
+          <pre><code class="javascript" data-trim>
+users.map(
+   (user) =&gt; {
+     ...user, 
+     username: user.login
+   } 
+)
+          </code></pre>
+          <pre class="fragment"><code class="json" data-trim>
+{
+   "login": "admin",
+   "username": "admin,
+}
+          </code></pre>
+          <pre class="fragment"><code class="javascript" data-trim>
+users.map(
+    ({login, ...rest}) =&gt; {
+     ...rest,
+     username: login
+   } 
+)
+          </code></pre>
+        </section>
+        <section>Эта проблема может быть масштабней</section>
+        <section>Проект может до 80% состоять из маппингов</section>
+        <section>
+          Этой проблемы бы не было, если бы контракт был бы прописан вначале!
+        </section>
+        <section>
+          <pre><code class="yaml" style="font-size: 0.5em; line-height: 1.1" data-line-numbers="1-31|5|13|17-32">
+openapi: 3.0.0
+...
+paths:
+  /auth/login:
+    post:
+      ...
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginCredentials'
+...
+components:
+  schemas:
+    LoginCredentials:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: User's username or email
+          example: johndoe
+        password:
+          type: string
+          description: User's password
+          format: password
+          example: securePassword123!
+          writeOnly: true
+</code></pre>
+        </section>
+        <section>Типы</section>
+        <section>
+          <pre><code class="typescript" data-trim>
+interface User {
+    id?: string;  // теоретически может быть undefined
+    name: string;
+}
+          </code></pre>
+        </section>
+        <section>
+          <pre><code class="typescript" data-trim>
+function processUser(user: User) {
+    // Ошибка TS: 'id' возможно undefined
+    console.log(user.id.toUpperCase()); 
+}
+          </code></pre>
+        </section>
+        <section>
+          <pre><code data-trim>
+interface User {
+    id: string;
+    name: string;
+}
+
+type UnsavedUser = Omit&lt;User, &quot;id&quot;&gt;
+          </code></pre>
+        </section>
+        <section>
+          <h2 class="r-fit-text">Про незаконченные миграции</h2>
+        </section>
+        <section>
+          <h2>Большая миграция через правило туриста</h2>
+        </section>
+        <section>
+          <ul>
+            <li>Я хочу уйти от Redux к Redux Saga</li>
+            <li class="fragment">Вот прототип</li>
+            <li class="fragment">Вот первая фича на Saga</li>
+            <li class="fragment">Остальное по правилу туриста</li>
+          </ul>
+        </section>
+        <section>
+          <blockquote>
+            A scout leaves no trace… and tries to leave the world a little
+            better than he found it
+          </blockquote>
+        </section>
+        <section>
+          Когда будем переписывать &mdash; переведем на новый стейт менеджер
+        </section>
+        <section>
+          <h2>Теперь у нас есть</h2>
+          <ul>
+            <li>Redux</li>
+            <li>Redux-saga</li>
+            <li>Redux-toolkit</li>
+            <li>RxJS</li>
+          </ul>
+          <p class="fragment">Надежда, что когда-нибудь это получится</p>
+        </section>
+        <section>
+          <h2>Что нужно было сделать</h2>
+          <ul>
+            <li>Будет ли миграция оправдана?</li>
+            <li>Можете ли вы позволить себе миграцию?</li>
+            <li>Кто будет отвечать за миграцию?</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Знай cвои данные!</h2>
+        </section>
+        <section>
+          <h2>Что нужно было сделать</h2>
+          <ul>
+            <li>Будет ли миграция оправдана?</li>
+            <li>Можете ли вы позволить себе миграцию?</li>
+            <li>Кто будет отвечать за миграцию?</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Сеньорный подход</h2>
+          <p>Умей доводить дела до конца</p>
+        </section>
+        <section>
+          <h2>Вывод 1</h2>
+          <p>Никто не хотел сделать плохо</p>
+        </section>
+        <section>
+          <h2>Вывод 2</h2>
+          <p>Задача не заканичвается коммитом в мастер</p>
+        </section>
+        <section>
+          <h2>Вывод 3</h2>
+          <p>Все о чем мы говорили &mdash; это на самом деле про софты</p>
+        </section>
+			</div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				hash: true,
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+			});
+		</script>
+	</body>
+</html>
