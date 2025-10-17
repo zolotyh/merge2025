@@ -1,681 +1,579 @@
 <!doctype html>
 <html lang="en">
-	<head>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,100..900;1,100..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>reveal.js</title>
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,100..900;1,100..900&family=Manrope:wght@200..800&display=swap"
+    rel="stylesheet">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<link rel="stylesheet" href="dist/reset.css">
-		<link rel="stylesheet" href="dist/reveal.css">
-		<link rel="stylesheet" href="dist/theme/white.css">
+  <title>reveal.js</title>
+
+  <link rel="stylesheet" href="dist/reset.css">
+  <link rel="stylesheet" href="dist/reveal.css">
+  <link rel="stylesheet" href="dist/theme/white.css">
 
 
-		<!-- Theme used for syntax highlighted code -->
-		<link rel="stylesheet" href="plugin/highlight/monokai.css">
-	</head>
-	<body>
-		<div class="reveal">
-			<div class="slides">
-				<section>
-          <h2>От мечты к провалу</h2>
-          <p>как загубить фронтенд-проект</p>
+  <!-- Theme used for syntax highlighted code -->
+  <link rel="stylesheet" href="plugin/highlight/monokai.css">
+</head>
+
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section>
+        <h2>Не браузерные, а свои</h2>
+        <p>пишем собственную плагинную систему для фронтенд приложения</p>
+      </section>
+        <section data-background="#000">
+          <h2>1. Задача</h2>
         </section>
-        <section>
-          <blockquote cite="" style="font-style: normal; font-weight: 500; font-size: 0.7em">
-            Бабочка взмахивает крыльями в Китае и колеблет воздух, и, в конце концов, <br/>на Нью-Йорк обрушивается шторм
-          </blockquote>
-        </section>
-        <section>
-          <h2>Эффект бабочки</h2>
-          <p class="fragment">Небольшие решения<br/>&mdash; большие последствия</p>
-          <aside class="notes">
-            <ul>
-              <li>1952 Рэй Брэдбери =&gt; И грянул гром</li>
-              <li>1972 Предсказуемость: может ли взмах крыла бабочки в Бразилии вызвать торнадо в Техасе?</li>
-              <li>Теория Хаоса</li>
-              <li>2004 Фильм эффект бабочки</li>
-            </ul>
-          </aside>
-        </section>
-        <section>
-          <h3>План на сегодня</h3>
-          <ol style="font-weight: 300">
-            <li>DRY
-              <ul>
-                <li>Код</li>
-                <li>Части проекта</li>
-                <li>Конфиги</li>
-              </ul>
-            </li>
-            <li>Имена и типы</li>
-            <li>Большие изменения</li>
-            <li>Перформанс</li>
-          </ol>
-        </section>
-        <section>
-          <h1>DRY</h1>
-          <p>Don’t repeat yourself</p>
-        </section>
-        <section data-transition="slide none">
-          <img src="img/tetris.svg" alt="">
-        </section>
-        <section data-transition="none slide">
-          <img  src="img/tetris2.svg" alt="">
-        </section>
-        <section>
-          <p>А всегда ли это работает?</p>
-        </section>
-        <section>
-          <pre style="font-size: 0.44em"><code data-trim data-line-numbers="1-17|1|4-5|6-11|12-14">
-function ProductCard({ product }) {
-  return (
-    &lt;div className=&quot;product-card&quot;&gt;
-      &lt;img src={product.image} alt={product.name} /&gt;
-      &lt;h3&gt;{product.name}&lt;/h3&gt;
-      &lt;div className=&quot;price&quot;&gt;
-        &lt;span className=&quot;current-price&quot;&gt;${product.price}&lt;/span&gt;
-        {product.oldPrice &amp;&amp; (
-          &lt;span className=&quot;old-price&quot;&gt;${product.oldPrice}&lt;/span&gt;
-        )}
-      &lt;/div&gt;
-      &lt;button onClick={() =&gt; addToCart(product.id)}&gt;
-        В корзину
-      &lt;/button&gt;
-    &lt;/div&gt;
-  );
+      <section>
+        <img src="img/editor.png" alt="">
+      </section>
+      <section>
+        Мы хотим, чтобы для нас можно было бы писать плагины
+      </section>
+      <section>
+        <img src="img/1.png" alt="">
+      </section>
+      <section>
+        <img src="img/3.png" alt="">
+      </section>
+      <section>
+        <img src="img/2.png" alt="">
+      </section>
+      <section data-transition="slide none">
+        <h2>Плагин</h2>
+        <pre><code data-trim data-noescape>
+function startPlugin() {
+  console.log('Plugin started');
+}
+
+export default {
+    // Точка входа в плагин
+    onInit: startPlugin,
+}
+
+          </code></pre>
+      </section>
+      <section data-transition="none">
+        <h2>Плагин</h2>
+        <pre><code data-trim data-noescape>
+function startPlugin(api) {
+  console.log('Plugin started');
+}
+
+export default {
+    // Точка входа в плагин
+    onInit: startPlugin,
+}
+
+          </code></pre>
+      </section>
+      <section data-transition="none">
+        <h2>Плагин</h2>
+        <pre><code data-trim data-noescape>
+async function update(api){
+  const old = await api
+                     .document
+                     .selection
+                     .getSelectionAsText();
+
+  const new = numbers2words(old) // логика плагина
+
+  await api.document.insertContent(new);
 }
           </code></pre>
-        </section>
-        <section>
-          <table>
-            <tr>
-              <td>20 строк кода</td>
-            </tr>
-            <tr>
-              <td>1 параметр (product)</td>
-            </tr>
-            <tr>
-              <td>30 секунд на понимание логики</td>
-            </tr>
-            <tr>
-              <td>3-5 тестовых случаев для полного покрытия</td>
-            </tr>
-          </table>
-        </section>
-        <section>
-          <pre style="font-size: 0.44em" ><code data-trim  data-line-numbers="1-33|1|2-14|16-23|25-31">
-function ProductCard({ product, layout = &#39;default&#39; }) {
-  const renderPrice = () =&gt; {
-    if (layout === &#39;compact&#39;) {
-      return &lt;span className=&quot;price-compact&quot;&gt;${product.price}&lt;/span&gt;;
-    }
-    return (
-      &lt;div className=&quot;price&quot;&gt;
-        &lt;span className=&quot;current-price&quot;&gt;${product.price}&lt;/span&gt;
-        {product.oldPrice &amp;&amp; (
-          &lt;span className=&quot;old-price&quot;&gt;${product.oldPrice}&lt;/span&gt;
-        )}
-      &lt;/div&gt;
-    );
-  };
+      </section>
+      <section data-transition="none">
+        <h2>Плагин</h2>
+        <pre><code data-trim data-noescape>
 
-  const renderButton = () =&gt; {
-    const buttonText = layout === &#39;minimal&#39; ? &#39;Купить&#39; : &#39;В корзину&#39;;
-    return (
-      &lt;button onClick={() =&gt; addToCart(product.id)}&gt;
-        {buttonText}
-      &lt;/button&gt;
-    );
-  };
 
-  return (
-    &lt;div className={`product-card product-card--${layout}`}&gt;
-      &lt;img src={product.image} alt={product.name} /&gt;
-      &lt;h3&gt;{product.name}&lt;/h3&gt;
-      {renderPrice()}
-      {renderButton()}
-    &lt;/div&gt;
-  );
+function startPlugin(api) {
+  api.ui.contextMenu.registerItems([{
+      title: 'Прописью',
+      onClick: update.call(this, api),
+  }]);
 }
           </code></pre>
+      </section>
+        <section data-background="#000">
+          <h2>2. Идеи которые не понравились</h2>
+        </section>
+        <section data-background="#000">
+          <h2>3. Идеи которые не понравились</h2>
+        </section>
+        <section data-background="#000">
+          <h2>3. Пишем сами</h2>
         </section>
         <section>
-          <table>
-            <tr>
-              <td>50 строк кода (увеличение в 2.5 раза)</td>
-            </tr>
-            <tr>
-              <td>4 параметра</td>
-            </tr>
-            <tr>
-              <td>3 минуты на понимание</td>
-            </tr>
-            <tr>
-              <td>10 тестовых случаев</td>
-            </tr>
-          </table>
+          <h2>Фаза 1: Базовый Lockdown</h2>
+          <h3>Проблема: Prototype Pollution</h3>
+          <p>Код может модифицировать встроенные прототипы и влиять на другой код</p>
         </section>
         <section>
-          <pre style="font-size: .44em"><code data-trim data-line-numbers="1-30|1-9|10-18|20-27|29">
-function ProductCard({ 
-  product, 
-  layout = &#39;default&#39;,
-  theme = &#39;light&#39;,
-  showRating = true,
-  showBadge = true,
-  buttonAction = &#39;cart&#39;,
-  priceFormat = &#39;standard&#39;
-}) {
-  const getLayoutConfig = () =&gt; {
-    const configs = {
-      default: { imageSize: &#39;large&#39;, titleSize: &#39;h3&#39;, spacing: &#39;normal&#39; },
-      compact: { imageSize: &#39;medium&#39;, titleSize: &#39;h4&#39;, spacing: &#39;small&#39; },
-      minimal: { imageSize: &#39;small&#39;, titleSize: &#39;h5&#39;, spacing: &#39;tiny&#39; },
-      featured: { imageSize: &#39;xlarge&#39;, titleSize: &#39;h2&#39;, spacing: &#39;large&#39; }
-    };
-    return configs[layout] || configs.default;
-  };
-
-  const renderPrice = () =&gt; {
-    const formatters = {
-      standard: () =&gt; renderStandardPrice(),
-      compact: () =&gt; renderCompactPrice(),
-      currency: () =&gt; renderCurrencyPrice()
-    };
-    return formatters[priceFormat]?.() || formatters.standard();
-  };
-
-  // ... остальная логика
-}
-          </code></pre>
-        </section>
-        <section>
-          <table>
-            <tr>
-              <td>150 строк кода</td>
-            </tr>
-            <tr>
-              <td>8 параметров конфигурации</td>
-            </tr>
-            <tr>
-              <td>15 минут на понимание логики</td>
-            </tr>
-            <tr>
-              <td>30+ тестовых случаев</td>
-            </tr>
-          </table>
-        </section>
-        <section>
-          <p>Вы еще помните чего мы там <b>DRY</b>им?</p>
-        </section>
-        <section>
-          <h2>Может повторение не так и страшно?</h2>
-          <pre style="font-size: 0.5em"><code data-trim>
-&lt;CompactProductCard product={product} /&gt;
-&lt;FeaturedProductCard product={product} /&gt;
-&lt;MinimalProductCard product={product} /&gt;
-          </code></pre>
-        </section>
-        <section>
-          <h2>Композиция</h2>
-          <pre style="font-size: 0.5em"><code data-trim>
-&lt;Card&gt;
-  &lt;CardImage src={product.image} /&gt;
-  &lt;CardTitle&gt;{product.name}&lt;/CardTitle&gt;
-  &lt;CardPrice price={product.price} oldPrice={product.oldPrice} /&gt;
-  &lt;CardButton onClick={() =&gt; addToCart(product.id)}&gt;
-            В корзину
-  &lt;/CardButton&gt;
-&lt;/Card&gt;
-          </code></pre>
-        </section>
-        <section>
-          <h2>А что выбрать?</h2>
-        </section>
-        <section>
-          <b>WET</b> (Write Everything Twice) принцип
-          <p style="font-size: 0.7em">дублировать код до понимания реальных паттернов</p>
-        </section>
-        <section>
-          <b>AHA</b> (Avoid Hasty Abstractions) принцип
-          <p style="font-size: 0.7em">золотая середина между DRY и WET</p>
-        </section>
-        <section>
-          <ul style="font-size: 0.7em">
-            <li>Дождитесь появления абстракции в трех или более местах</li>
-            <li>Убедитесь, что паттерн действительно устойчив</li>
-            <li>Создавайте абстракции на основе реального опыта, а не предположений</li>
-            <li>Оптимизируйте код для изменений, а не для элегантности</li>
-          </ul>
-        </section>
-        <section>
-          <h2>Синьорный подход</h2>
-          <p class="fragment">Если будет меняться &mdash; сделай гибче</p>
-          <p class="fragment">Не будет меняться &mdash; копируй</p>
-        </section>
-        <section>
-          <h2>Нужно погрузиться в бизнес</h2>
-        </section>
-        <section>
-          Еще раз про DRY
-        </section>
-        <section>
-          <h2>Файлы</h2>
-          <img src="img/mo.png" alt="">
-        </section>
-        <section>
-          <h2>Редакторы</h2>
-          <img src="img/mo2.png" alt="">
-        </section>
-        <section data-transition="slide none">
-          <img src="./img/f_e.svg" alt="">
-        </section>
-        <section data-transition="none slide">
-          <img src="./img/f_e2.svg" alt="">
-        </section>
-        <section>
-          <img src="./img/common.svg" alt="">
-        </section>
-        <section>
-          <p>Ломающие изменения</p>
-          <img src="img/chat.svg" style="max-height: 60vh" alt="">
-        </section>
-        <section>
-          <p>Баги</p>
-          <img src="img/chat3.svg" style="max-height: 60vh" alt="">
-        </section>
-        <section>
-          <img src="./img/common.png" alt="">
-        </section>
-        <section>
-          <h2>А что есть common!?</h2>
-          <ul>
-            <li>Авторизация</li>
-            <li>Обшие компоненты</li>
-            <li>Веб клиент</li>
-            <li>Какие-то виджеты</li>
-          </ul>
-        </section>
-        <section>
-          <img src="./img/npm.svg" alt="">
-        </section>
-        <section>
-          <h2>Синьорный подход</h2>
-          <ul>
-            <li class="fragment">Семантика важна</li>
-            <li class="fragment">Важно быть простым и понятным</li>
-            <li class="fragment">Последствия решений</li>
-          </ul>
-        </section>
-        <section>
-          <h2>DRY в конфигурации</h2>
-          <p>или конфигурация ради конфигурации</p>
-        </section>
-<section>
-          <h2>Webpack</h2>
-          <pre><code class="javascript" data-trim>
-const path = require(&#39;path&#39;);
-
-module.exports = {
-  entry: &#39;./src/index.js&#39;,
-  output: {
-    path: path.resolve(__dirname, &#39;dist&#39;),
-    filename: &#39;bundle.js&#39;,
-    clean: true,
-  },
-  mode: &#39;development&#39;,
-  module: {
-    rules: [
-      {
-        test: /\.(js|jsx)$/,
-        exclude: /node_modules/,
-        use: {
-          loader: &#39;babel-loader&#39;,
-          options: {
-            presets: [&#39;@babel/preset-env&#39;, &#39;@babel/preset-react&#39;],
-          },
-        },
-      },
-      {
-        test: /\.css$/,
-        use: [&#39;style-loader&#39;, &#39;css-loader&#39;],
-      },
-    ],
-  },
-  resolve: {
-    extensions: [&#39;.js&#39;, &#39;.jsx&#39;],
-  },
-  devServer: {
-    static: path.join(__dirname, &#39;dist&#39;),
-    compress: true,
-    port: 3000,
-  },
+                <h3>Атака через прототипы</h3>
+                <pre><code class="javascript" data-trim>
+// Атака ДО lockdown:
+Array.prototype.push = function() { 
+    console.log('💀 Hacked!'); 
 };
-</code></pre>
-        </section>
-<section>
-          У нас много команд, давайте переиспользуем этот замечательный config
-        </section>
-        <section>
-          <h2>Все просто</h2>
-          <pre><code data-trim class="javascript">
-module.exports = require(&#39;@my-company/configs/webpack.config&#39;);
-          </code></pre>
-        </section>
-        <section>
-          <h2>&mdash; Мне нужно добавить плагин!</h2>
-        </section>
-        <section data-transition="slide none">
-          <h2>Все просто</h2>
-          <pre><code data-trim class="javascript">
-            const commonConfig = require(&#39;@my-company/configs/webpack.config&#39;);
 
-            // свой плагин
-            module.exports = {
-            ...commonConfig, 
-            plugins : [mySuperPlugin]
+[].push(1); // 💀 Hacked!
+
+// Все массивы в приложении теперь сломаны!
+const data = [];
+data.push(5); // 💀 Hacked!
+                </code></pre>
+            </section>
+        <section>
+                <h3>Результат Фазы 1</h3>
+                <pre><code class="javascript" data-trim>
+lockdownPhase1();
+
+// ПОСЛЕ lockdown атака не работает:
+try {
+    Array.prototype.push = function() { 
+        console.log('💀 Hacked!'); 
+    };
+} catch (e) {
+    console.log('✓ Атака заблокирована:', e.message);
+}
+
+[].push(1); // работает нормально
+                </code></pre>
+            </section>
+            <section>
+                <h3>Решение: Заморозка прототипов</h3>
+                <pre><code class="javascript" data-trim>
+function lockdownPhase1() {
+    const intrinsics = [
+        Object.prototype,
+        Array.prototype,
+        Function.prototype,
+        String.prototype,
+        Number.prototype,
+        Boolean.prototype,
+        Promise.prototype,
+        RegExp.prototype,
+        Date.prototype,
+        Error.prototype,
+    ];
+
+    intrinsics.forEach(proto => {
+        Object.freeze(proto);
+    });
+
+    console.log('✓ Фаза 1: Прототипы заморожены');
+}
+                </code></pre>
+            </section>
+<section>
+                <h2>Фаза 2: Harden</h2>
+                <h3>Проблема: Модификация объектов</h3>
+                <p>Даже если прототипы заморожены, сами объекты можно изменять</p>
+            </section>
+
+            <section>
+                <h3>Атака на объект</h3>
+                <pre><code class="javascript" data-trim>
+const counter = {
+    count: 0,
+    increment() { return ++this.count; }
+};
+
+console.log(counter.increment()); // 1
+
+// Атака - замена метода
+counter.increment = function() { 
+    console.log('💀 Взломан!'); 
+    return 999; 
+};
+
+console.log(counter.increment()); // 💀 Взломан! 999
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>Решение: Глубокая заморозка</h3>
+                <pre><code class="javascript" data-trim>
+function harden(object) {
+    const visited = new WeakSet();
+
+    function hardenInternal(obj) {
+        if (obj === null || typeof obj !== 'object') {
+            return obj;
+        }
+        if (visited.has(obj)) return obj;
+        
+        visited.add(obj);
+
+        // Рекурсивно обрабатываем свойства
+        Object.getOwnPropertyNames(obj).forEach(name => {
+            const value = obj[name];
+            if (typeof value === 'object' && value !== null) {
+                hardenInternal(value);
             }
-          </code></pre>
-        </section>
-<section data-transition="none slide">
-          <h2>Все просто</h2>
-          <pre><code data-trim class="javascript" data-line-numbers>
-const commonConfig = require(&#39;@my-company/configs/webpack.config&#39;);
+        });
 
-module.exports = {
-  ...commonConfig, 
-  plugins : [
-    ...commonConfig.plugins, 
-    mySuperPlugin
-  ]
+        // Обрабатываем прототип
+        const proto = Object.getPrototypeOf(obj);
+        if (proto !== null) {
+            hardenInternal(proto);
+        }
+
+        Object.freeze(obj);
+        return obj;
+    }
+
+    return hardenInternal(object);
 }
-          </code></pre>
-        </section>
-        <section>
-          Добро пожаловать в ад!
-          <ul>
-            <li class="fragment">Некоторые плагины нужно перенастраивать</li>
-            <li class="fragment">У всех разные правила</li>
-            <li class="fragment">У всех разные сервера разработки</li>
-          </ul>
-        </section>
-        <section>
-          <h2>Что происходит дальше</h2>
-          <ul>
-            <li>Нам нужен frontops!</li>
-            <li>Пишем фреймворк на настройке конфигов</li>
-            <li>Не меняй корневой пакет, не понятно где все упадет</li>
-          </ul>
-        </section>
-        <section>Помните react-scripts?</section>
-        <section>
-          <h2>Craco</h2>
-          <blockquote>
-            allows you to get all of the benefits of Create React App without
-            ejecting
-          </blockquote>
-          <pre class="fragment">
-CREATE
-REACT
-APP
-CONFIGURATION
-OVERRIDE
-</pre
-          >
-        </section>
-        <section style="text-align: left">
-          <p>&mdash; Зачем мы это делали?</p>
-          <p>&mdash; Хотели единый конфиг!</p>
-        </section>
-        <section style="text-align: left">
-          <p>&mdash; Зачем нам единый конфиг?</p>
-          <p>
-            &mdash; Чтобы не настраивать webpack каждый раз, чтобы менять все
-            настройки в одном месте
-          </p>
-        </section>
-        <section style="text-align: left">
-          <p>
-            &mdash; Сколько стоит настроить вебпак для каждого проекта и менять
-            каждый конфиг отдельно?
-          </p>
-          <p>&mdash; Да фиг его знает!</p>
-        </section>
-        <section>
-          <p>
-            Лучше иметь одну стратегию
-          </p>
-          <ul>
-            <li class="fragment">Переиспользовать и запрещать менять</li>
-            <li class="fragment">Не переиспользовать</li>
-          </ul>
-        </section>
-        <section>
-          <h2>Синьорный подход</h2>
-          <p>Важно придерживаться одной стратегии</p>
-        </section>
-<section>
-          <h2 class="r-fit-text">Имена и типы</h2>
-        </section>
-        <section>
-          <img src="img/login.png" alt="" />
-        </section>
-        <section>
-          <pre><code>
-type LoginData = {
-   "login": "string",
-   "password": "string"
-}
-          </code></pre>
-        </section>
-        <section>
-          <h2>JSON</h2>
-          <pre><code data-trim>
-{
-  "username": "aleksei.zolotykh",
-  "password": "123456"
-}
-          </code></pre>
-        </section>
-        <section>
-          <pre><code data-trim>
-const login = ({login, password}) =&gt; {
-  return fetch(&#39;/login&#39;, {
-    body: JSON.stringify({username: login , password}
-  })
-}
-          </code></pre>
-        </section>
-        <section>login =&gt; username</section>
-        <section>
-          <pre><code class="js" data-trim>
-const users = [
-  {login: "admin", ...}, 
-  {login: "superadmin", ...}, 
-  {login: "zolotyh", ...}
-]
-          </code></pre>
-        </section>
-        <section>
-          <pre><code class="javascript" data-trim>
-users.map(
-   (user) =&gt; {
-     ...user, 
-     username: user.login
-   } 
-)
-          </code></pre>
-          <pre class="fragment"><code class="json" data-trim>
-{
-   "login": "admin",
-   "username": "admin,
-}
-          </code></pre>
-          <pre class="fragment"><code class="javascript" data-trim>
-users.map(
-    ({login, ...rest}) =&gt; {
-     ...rest,
-     username: login
-   } 
-)
-          </code></pre>
-        </section>
-        <section>Эта проблема может быть масштабней</section>
-        <section>Проект может до 80% состоять из маппингов</section>
-        <section>
-          Этой проблемы бы не было, если бы контракт был бы прописан вначале!
-        </section>
-        <section>
-          <pre><code class="yaml" style="font-size: 0.5em; line-height: 1.1" data-line-numbers="1-31|5|13|17-32">
-openapi: 3.0.0
-...
-paths:
-  /auth/login:
-    post:
-      ...
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginCredentials'
-...
-components:
-  schemas:
-    LoginCredentials:
-      type: object
-      required:
-        - username
-        - password
-      properties:
-        username:
-          type: string
-          description: User's username or email
-          example: johndoe
-        password:
-          type: string
-          description: User's password
-          format: password
-          example: securePassword123!
-          writeOnly: true
-</code></pre>
-        </section>
-        <section>Типы</section>
-        <section>
-          <pre><code class="typescript" data-trim>
-interface User {
-    id?: string;  // теоретически может быть undefined
-    name: string;
-}
-          </code></pre>
-        </section>
-        <section>
-          <pre><code class="typescript" data-trim>
-function processUser(user: User) {
-    // Ошибка TS: 'id' возможно undefined
-    console.log(user.id.toUpperCase()); 
-}
-          </code></pre>
-        </section>
-        <section>
-          <pre><code data-trim>
-interface User {
-    id: string;
-    name: string;
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>Результат Фазы 2</h3>
+                <pre><code class="javascript" data-trim>
+const safeCounter = harden({
+    count: 0,
+    increment() { return ++this.count; }
+});
+
+console.log(safeCounter.increment()); // 1
+
+try {
+    safeCounter.increment = function() { 
+        console.log('💀 Взломан!'); 
+    };
+} catch (e) {
+    console.log('✓ Атака заблокирована');
 }
 
-type UnsavedUser = Omit&lt;User, &quot;id&quot;&gt;
-          </code></pre>
-        </section>
-        <section>
-          <h2 class="r-fit-text">Про незаконченные миграции</h2>
-        </section>
-        <section>
-          <h2>Большая миграция через правило туриста</h2>
-        </section>
-        <section>
-          <ul>
-            <li>Я хочу уйти от Redux к Redux Saga</li>
-            <li class="fragment">Вот прототип</li>
-            <li class="fragment">Вот первая фича на Saga</li>
-            <li class="fragment">Остальное по правилу туриста</li>
-          </ul>
-        </section>
-        <section>
-          <blockquote>
-            A scout leaves no trace… and tries to leave the world a little
-            better than he found it
-          </blockquote>
-        </section>
-        <section>
-          Когда будем переписывать &mdash; переведем на новый стейт менеджер
-        </section>
-        <section>
-          <h2>Теперь у нас есть</h2>
-          <ul>
-            <li>Redux</li>
-            <li>Redux-saga</li>
-            <li>Redux-toolkit</li>
-            <li>RxJS</li>
-          </ul>
-          <p class="fragment">Надежда, что когда-нибудь это получится</p>
-        </section>
-        <section>
-          <h2>Что нужно было сделать</h2>
-          <ul>
-            <li>Будет ли миграция оправдана?</li>
-            <li>Можете ли вы позволить себе миграцию?</li>
-            <li>Кто будет отвечать за миграцию?</li>
-          </ul>
-        </section>
-        <section>
-          <h2>Знай cвои данные!</h2>
-        </section>
-        <section>
-          <h2>Что нужно было сделать</h2>
-          <ul>
-            <li>Будет ли миграция оправдана?</li>
-            <li>Можете ли вы позволить себе миграцию?</li>
-            <li>Кто будет отвечать за миграцию?</li>
-          </ul>
-        </section>
-        <section>
-          <h2>Сеньорный подход</h2>
-          <p>Умей доводить дела до конца</p>
-        </section>
-        <section>
-          <h2>Вывод 1</h2>
-          <p>Никто не хотел сделать плохо</p>
-        </section>
-        <section>
-          <h2>Вывод 2</h2>
-          <p>Задача не заканичвается коммитом в мастер</p>
-        </section>
-        <section>
-          <h2>Вывод 3</h2>
-          <p>Все о чем мы говорили &mdash; это на самом деле про софты</p>
-        </section>
-			</div>
-		</div>
+// Объект остается неизменным
+                </code></pre>
+            </section>
 
-		<script src="dist/reveal.js"></script>
-		<script src="plugin/notes/notes.js"></script>
-		<script src="plugin/markdown/markdown.js"></script>
-		<script src="plugin/highlight/highlight.js"></script>
-		<script>
-			// More info about initialization & config:
-			// - https://revealjs.com/initialization/
-			// - https://revealjs.com/config/
-			Reveal.initialize({
-				hash: true,
+            <!-- Фаза 3: Конструкторы -->
+            <section>
+                <h2>Фаза 3: Защита конструкторов</h2>
+                <h3>Проблема: Обход через Constructor</h3>
+                <p>Через Function.prototype.constructor можно обойти изоляцию</p>
+            </section>
 
-				// Learn about plugins: https://revealjs.com/plugins/
-				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
-			});
-		</script>
-	</body>
+            <section>
+                <h3>Атака через конструктор</h3>
+                <pre><code class="javascript" data-trim>
+// Получаем доступ к глобальному scope
+function escape() {
+    const GlobalEval = (function(){})
+        .constructor('return this')()
+        .eval;
+    return GlobalEval;
+}
+
+// Теперь можем выполнить любой код!
+const realEval = escape();
+realEval('console.log("Обход изоляции!")');
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>Решение: Блокировка конструкторов</h3>
+                <pre><code class="javascript" data-trim>
+function lockdownPhase3() {
+    // Замораживаем прототипы
+    [Object.prototype, Array.prototype, 
+     Function.prototype, String.prototype]
+        .forEach(proto => Object.freeze(proto));
+
+    // Создаем безопасную обертку для Function
+    const OriginalFunction = Function;
+    const safeFunction = new Proxy(OriginalFunction, {
+        construct() {
+            throw new TypeError(
+                'Function() запрещен после lockdown'
+            );
+        },
+        apply() {
+            throw new TypeError(
+                'Function() запрещен после lockdown'
+            );
+        }
+    });
+
+    globalThis.Function = safeFunction;
+    console.log('✓ Фаза 3: Конструкторы защищены');
+}
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>Результат Фазы 3</h3>
+                <pre><code class="javascript" data-trim>
+lockdownPhase3();
+
+try {
+    const bad = (function(){})
+        .constructor('return this');
+    console.log('Обход не удался');
+} catch (e) {
+    console.log('✓ Обход заблокирован:', e.message);
+    // TypeError: Function() запрещен после lockdown
+}
+                </code></pre>
+            </section>
+
+            <!-- Фаза 4: Compartment -->
+            <section>
+                <h2>Фаза 4: Compartment</h2>
+                <h3>Проблема: Полная изоляция</h3>
+                <p>Нужна изоляция кода с контролем доступа к глобальным объектам</p>
+            </section>
+
+            <section>
+                <h3>Реализация Compartment</h3>
+                <pre><code class="javascript" data-trim>
+class Compartment {
+    constructor(endowments = {}) {
+        // Изолированный глобальный объект
+        this.globalObject = Object.create(null);
+
+        // Безопасные встроенные объекты
+        const safeIntrinsics = {
+            Object, Array, String, Number,
+            Boolean, Math, JSON, Promise
+        };
+
+        Object.assign(this.globalObject, 
+                     safeIntrinsics, endowments);
+        Object.freeze(this.globalObject);
+    }
+
+    evaluate(code) {
+        const scopeProxy = new Proxy(this.globalObject, {
+            has() { return true; },
+            get(target, prop) {
+                // Блокируем опасные объекты
+                if (prop === 'window' || 
+                    prop === 'document' || 
+                    prop === 'globalThis') {
+                    return undefined;
+                }
+                return target[prop];
+            }
+        });
+
+        const scopedEval = new Function('scope', 
+            'with (scope) { return eval(arguments[1]); }'
+        );
+
+        return scopedEval(scopeProxy, code);
+    }
+}
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>Изоляция доступа</h3>
+                <pre><code class="javascript" data-trim>
+const compartment = new Compartment();
+
+// window недоступен
+try {
+    const result = compartment.evaluate(
+        'typeof window'
+    );
+    console.log(result); // "undefined"
+} catch (e) {
+    console.log('✓ window недоступен');
+}
+
+// document недоступен
+const result2 = compartment.evaluate(
+    'typeof document'
+);
+console.log(result2); // "undefined"
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>Изолированные контексты</h3>
+                <pre><code class="javascript" data-trim>
+// Каждый compartment изолирован
+const compartmentA = new Compartment({ 
+    name: 'Alice', 
+    secret: 'A123' 
+});
+
+const compartmentB = new Compartment({ 
+    name: 'Bob', 
+    secret: 'B456' 
+});
+
+console.log(
+    compartmentA.evaluate('name + ": " + secret')
+); // "Alice: A123"
+
+console.log(
+    compartmentB.evaluate('name + ": " + secret')
+); // "Bob: B456"
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>Безопасный API</h3>
+                <pre><code class="javascript" data-trim>
+const log = [];
+const safeAPI = harden({
+    log(msg) { log.push(msg); }
+});
+
+const plugin = new Compartment({ api: safeAPI });
+
+plugin.evaluate(`
+    api.log("Плагин работает");
+    api.log("Без доступа к внешнему миру");
+`);
+
+console.log('Логи:', log);
+// ["Плагин работает", "Без доступа к внешнему миру"]
+                </code></pre>
+            </section>
+
+            <!-- Полный пример -->
+            <section>
+                <h2>Полный пример</h2>
+                <h3>Безопасная система плагинов</h3>
+            </section>
+
+            <section>
+                <h3>Инициализация</h3>
+                <pre><code class="javascript" data-trim>
+// 1. Безопасная среда
+lockdownPhase1();
+
+// 2. API для плагинов
+const pluginAPI = harden({
+    version: '1.0',
+    utils: {
+        add(a, b) { return a + b; },
+        multiply(a, b) { return a * b; }
+    },
+    storage: {
+        data: {},
+        set(key, value) { this.data[key] = value; },
+        get(key) { return this.data[key]; }
+    }
+});
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>Загрузка плагинов</h3>
+                <pre><code class="javascript" data-trim>
+// 3. Изолированные compartments
+const billPlugin = new Compartment({ api: pluginAPI });
+const joanPlugin = new Compartment({ api: pluginAPI });
+
+// 4. Выполнение кода плагинов
+const billResult = billPlugin.evaluate(`
+    api.storage.set('bill-counter', 0);
+    api.storage.set('bill-counter', 
+        api.storage.get('bill-counter') + 
+        api.utils.add(2, 3));
+    api.storage.get('bill-counter')
+`);
+
+const joanResult = joanPlugin.evaluate(`
+    api.storage.set('joan-counter', 0);
+    api.storage.set('joan-counter',
+        api.storage.get('joan-counter') + 
+        api.utils.multiply(2, 3));
+    api.storage.get('joan-counter')
+`);
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>Результаты</h3>
+                <pre><code class="javascript" data-trim>
+console.log('Bill plugin:', billResult); // 5
+console.log('Joan plugin:', joanResult); // 6
+console.log('Хранилище:', pluginAPI.storage.data);
+// { 'bill-counter': 5, 'joan-counter': 6 }
+
+// 5. API защищен от модификации
+try {
+    billPlugin.evaluate(`
+        api.utils.add = () => 999;
+    `);
+} catch (e) {
+    console.log('✓ API защищен');
+}
+
+// API продолжает работать
+console.log(pluginAPI.utils.add(1, 1)); // 2
+                </code></pre>
+            </section>
+
+            <!-- Итоги -->
+            <section>
+                <h2>Итоги: 4 фазы защиты</h2>
+                <ul>
+                    <li><strong>Фаза 1:</strong> Lockdown - защита от prototype pollution</li>
+                    <li><strong>Фаза 2:</strong> Harden - глубокая заморозка объектов</li>
+                    <li><strong>Фаза 3:</strong> Защита конструкторов - закрытие escape hatches</li>
+                    <li><strong>Фаза 4:</strong> Compartment - полная изоляция кода</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Применение SES</h2>
+                <ul>
+                    <li>Безопасное выполнение плагинов</li>
+                    <li>Изоляция сторонних библиотек</li>
+                    <li>Защита от supply chain attacks</li>
+                    <li>Создание доверенных сред выполнения</li>
+                </ul>
+            </section>
+
+            <section>
+                <h1>Спасибо за внимание!</h1>
+                <p>SES: Secure ECMAScript</p>
+                <p><small>hardenedjs.org | github.com/Agoric/SES</small></p>
+            </section>
+        <section data-background="#000">
+          <h2>4. Перформанс</h2>
+        </section>
+        <section data-background="#000">
+          <h2>5. Стандарты</h2>
+        </section>
+        <section data-background="#000">
+          <h2>5. Вывод</h2>
+        </section>
+    </div>
+  </div>
+
+  <script src="dist/reveal.js"></script>
+  <script src="plugin/notes/notes.js"></script>
+  <script src="plugin/markdown/markdown.js"></script>
+  <script src="plugin/highlight/highlight.js"></script>
+  <script>
+    // More info about initialization & config:
+    // - https://revealjs.com/initialization/
+    // - https://revealjs.com/config/
+    Reveal.initialize({
+      hash: true,
+
+      // Learn about plugins: https://revealjs.com/plugins/
+      plugins: [RevealMarkdown, RevealHighlight, RevealNotes]
+    });
+  </script>
+</body>
+
 </html>
